@@ -26,6 +26,24 @@
       font-family: 'EB Garamond', 'Playfair Display', serif;
       min-height: 100vh;
       overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ── Custom Cursor ── */
+    #cursor {
+      position: fixed; width: 12px; height: 12px;
+      background: var(--gold-light); border-radius: 50%;
+      pointer-events: none; z-index: 10001;
+      transform: translate(-50%,-50%);
+      box-shadow: 0 0 10px 4px var(--gold-dim), 0 0 20px 8px rgba(201,168,76,.15);
+      transition: width .15s, height .15s;
+    }
+    #cursor-ring {
+      position: fixed; width: 36px; height: 36px;
+      border: 1px solid rgba(201,168,76,.5);
+      border-radius: 50%; pointer-events: none; z-index: 10000;
+      transform: translate(-50%,-50%);
+      transition: transform .08s linear, width .2s, height .2s;
     }
 
     /* ── Starfield ── */
@@ -80,6 +98,7 @@
       border-radius: 3px;
       border: 1px solid transparent;
       transition: color .25s, border-color .25s, background .25s;
+      cursor: none;
     }
     .nav-links a:hover,
     .nav-links a.active {
@@ -94,7 +113,7 @@
     /* hamburger (mobile) */
     .hamburger {
       display: none; flex-direction: column; gap: 5px;
-      cursor: pointer; padding: .4rem; background: none; border: none;
+      cursor: none; padding: .4rem; background: none; border: none;
     }
     .hamburger span {
       display: block; width: 22px; height: 2px;
@@ -157,7 +176,7 @@
       display: flex; flex-direction: column; align-items: center;
       text-align: center; gap: .7rem;
       transition: transform .3s, border-color .3s, box-shadow .3s;
-      cursor: pointer;
+      cursor: none;
     }
     .portal-card::before {
       content: '';
@@ -215,6 +234,10 @@
   </style>
 </head>
 <body>
+
+<!-- Custom Cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
 
 <!-- Starfield -->
 <canvas id="starfield"></canvas>
@@ -365,6 +388,43 @@
   document.getElementById('hamburger').addEventListener('click', function(){
     document.getElementById('navLinks').classList.toggle('open');
   });
+
+  /* ── Custom Cursor ── */
+  (function(){
+    const cursor = document.getElementById('cursor');
+    const cursorRing = document.getElementById('cursor-ring');
+    let mx = -100, my = -100, rx = -100, ry = -100;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx + 'px';
+      cursor.style.top  = my + 'px';
+    });
+
+    function animRing() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      cursorRing.style.left = rx + 'px';
+      cursorRing.style.top  = ry + 'px';
+      requestAnimationFrame(animRing);
+    }
+    animRing();
+
+    document.querySelectorAll('a, .portal-card, button').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '20px';
+        cursor.style.height = '20px';
+        cursorRing.style.width = '54px';
+        cursorRing.style.height = '54px';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '12px';
+        cursor.style.height = '12px';
+        cursorRing.style.width = '36px';
+        cursorRing.style.height = '36px';
+      });
+    });
+  })();
 </script>
 </body>
 </html>

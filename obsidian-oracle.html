@@ -6,7 +6,7 @@
 <title>The Obsidian Oracle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Roboto:wght@300;400;500;700&family=Uncial+Antiqua&display=swap" rel="stylesheet">
 <style>
 /* ===== TOKENS ===== */
 :root {
@@ -136,7 +136,7 @@ nav {
 
 /* ===== LANG TOGGLE ===== */
 .lang-toggle {
-  position:fixed; top:68px; right:1.2rem; z-index:201;
+  position:fixed; top:1.2rem; right:1.2rem; z-index:201;
   font-family:'Cinzel',serif; font-size:.6rem;
   letter-spacing:.18em; text-transform:uppercase;
   padding:.4rem .8rem; border:1px solid var(--gold-dim);
@@ -752,6 +752,25 @@ footer::before {
   .elements-grid { grid-template-columns:1fr 1fr; }
   .sigil-wrap { width:170px; height:170px; }
 }
+/* ── Vietnamese font override ── */
+body.lang-vi, body.lang-vi .hero-eyebrow, body.lang-vi .hero-title,
+body.lang-vi .hero-subtitle, body.lang-vi .hero-cta,
+body.lang-vi .section-label, body.lang-vi .section-heading,
+body.lang-vi .lore-text p, body.lang-vi .q-label, body.lang-vi .q-input,
+body.lang-vi .spread-lbl, body.lang-vi .pos-label,
+body.lang-vi .reading-title, body.lang-vi .r-pos,
+body.lang-vi .r-name, body.lang-vi .r-kw, body.lang-vi .r-meaning,
+body.lang-vi .conclusion-title, body.lang-vi .conclusion-text,
+body.lang-vi .conclusion-advice h4, body.lang-vi .conclusion-advice li,
+body.lang-vi .instructions, body.lang-vi .btn,
+body.lang-vi .element-name, body.lang-vi .element-desc,
+body.lang-vi .pull-quote, body.lang-vi .pull-attr,
+body.lang-vi .footer-title, body.lang-vi .footer-tagline,
+body.lang-vi .lang-toggle, body.lang-vi .nav-links a,
+body.lang-vi .cf-name, body.lang-vi .cf-kw,
+body.lang-vi .scroll-indicator span, body.lang-vi .divider-sym {
+  font-family: 'Roboto', 'Times New Roman', sans-serif !important;
+}
 </style>
 </head>
 <body>
@@ -763,19 +782,6 @@ footer::before {
 <!-- Starfield Canvas -->
 <canvas id="cosmos"></canvas>
 
-<!-- Navigation -->
-<nav>
-  <a class="nav-logo" href="index.html">✦ Celestial Sanctum</a>
-  <button class="hamburger" id="hamburger" aria-label="Menu">
-    <span></span><span></span><span></span>
-  </button>
-  <ul class="nav-links" id="navLinks">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="tarot-example.html">Tarot</a></li>
-    <li><a href="obsidian-oracle.html" class="active">Oracle</a></li>
-    <li><a href="natal_chart.html">Astrology</a></li>
-  </ul>
-</nav>
 
 <button class="lang-toggle" id="langBtn" onclick="toggleLang()">🌐 Tiếng Việt</button>
 
@@ -1055,10 +1061,6 @@ for (let i = 0; i < 12; i++) {
   smokeContainer.appendChild(s);
 }
 
-/* ===== HAMBURGER ===== */
-document.getElementById('hamburger').addEventListener('click', () => {
-  document.getElementById('navLinks').classList.toggle('open');
-});
 
 /* ===== DECK DATA (78 cards) ===== */
 const DECK = [
@@ -1304,6 +1306,7 @@ let flippedCount = 0;
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'vi' : 'en';
   T = TRANSLATIONS[currentLang];
+  document.body.classList.toggle('lang-vi', currentLang === 'vi');
   applyLang();
 }
 
@@ -1356,14 +1359,14 @@ function applyLang() {
 
 function renderCardFront(cf, card) {
   const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
-  const suitDisplay = card.arcana === 'major' ? card.num : d.suit;
+  const suitDisplay = card.arcana === 'major' ? card.num : (currentLang === 'vi' ? card.suit : d.suit);
   cf.style.background = `linear-gradient(155deg,${card.col[0]} 0%,${card.col[1]} 60%,${card.col[0]} 100%)`;
   cf.innerHTML = `
     <div class="cf-inner">
       <div class="cf-orn">✦ · ✦</div>
       <div class="cf-num">${suitDisplay}</div>
       <div class="cf-sym">${card.sym}</div>
-      <div class="cf-name">${d.name}</div>
+      <div class="cf-name">${card.name}</div>
       <div class="cf-kw">${d.kw.join(' · ')}</div>
       <div class="cf-orn">✦ · ✦</div>
     </div>`;
@@ -1479,7 +1482,7 @@ function showReading() {
       <div class="card-reading" style="animation-delay:${i*.15}s">
         <div class="r-pos">${T.positions[i]}</div>
         <div class="r-sym">${card.sym}</div>
-        <div class="r-name">${d.name}</div>
+        <div class="r-name">${card.name}</div>
         <div class="r-kw">${d.kw.join(' · ')}</div>
         <div class="r-meaning">${d.meaning}</div>
       </div>`;
@@ -1500,9 +1503,9 @@ function generateConclusion() {
     `${drawnCards[0].name} planted seeds that ${drawnCards[1].name} now tends. ${drawnCards[2].name} shows what blooms — ${futureKw.toLowerCase()} awaits those who honour both their past and their present truth.`,
   ];
   const conclusions_vi = [
-    `Sợi chỉ nối ${cards[0].name} với ${cards[2].name} tiết lộ hành trình từ ${pastKw.toLowerCase()} đến ${futureKw.toLowerCase()}. Lá hiện tại, ${cards[1].name}, là lò luyện — nơi sự hiểu biết biến thành hành động.`,
+    `Sợi chỉ nối ${drawnCards[0].name} với ${drawnCards[2].name} tiết lộ hành trình từ ${pastKw.toLowerCase()} đến ${futureKw.toLowerCase()}. Lá hiện tại, ${drawnCards[1].name}, là lò luyện — nơi sự hiểu biết biến thành hành động.`,
     `Từ tiếng vọng của ${pastKw.toLowerCase()} qua dòng chảy ${presentKw.toLowerCase()}, một cung rõ ràng hướng đến ${futureKw.toLowerCase()}. Các lá bài không nói về định mệnh, mà về khuôn mẫu lựa chọn của bạn.`,
-    `${cards[0].name} gieo hạt giống mà ${cards[1].name} đang chăm sóc. ${cards[2].name} cho thấy điều nở rộ — ${futureKw.toLowerCase()} chờ đợi những ai tôn trọng cả quá khứ lẫn sự thật hiện tại.`,
+    `${drawnCards[0].name} gieo hạt giống mà ${drawnCards[1].name} đang chăm sóc. ${drawnCards[2].name} cho thấy điều nở rộ — ${futureKw.toLowerCase()} chờ đợi những ai tôn trọng cả quá khứ lẫn sự thật hiện tại.`,
   ];
 
   const arr = currentLang === 'vi' ? conclusions_vi : conclusions_en;
@@ -1515,7 +1518,7 @@ function generateConclusion() {
     `Return to this reading in three days. What was unclear now will speak differently then.`,
   ];
   const advices_vi = [
-    `Hãy ngồi với ${cards[1].name} trước khi hành động — bài học của nó là cầu nối giữa quá khứ và tương lai.`,
+    `Hãy ngồi với ${drawnCards[1].name} trước khi hành động — bài học của nó là cầu nối giữa quá khứ và tương lai.`,
     `Năng lượng của ${futureKw.toLowerCase()} đã bắt đầu khuấy động. Hãy chuẩn bị bằng cách đón nhận ${presentKw.toLowerCase()} trọn vẹn.`,
     `Hãy quay lại bài đọc này sau ba ngày. Điều chưa rõ hôm nay sẽ nói khác khi đó.`,
   ];

@@ -6,7 +6,7 @@
 <title>✦ The Mystic Tarot</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Roboto:wght@300;400;500;700&family=Uncial+Antiqua&display=swap" rel="stylesheet">
 <style>
 :root {
   --void: #050403;
@@ -420,6 +420,19 @@ nav {
   .nav-links.open { transform: translateY(0); }
   .nav-links a { text-align: center; padding: .65rem; }
   .hamburger { display: flex; }
+}
+/* ── Vietnamese font override ── */
+body.lang-vi, body.lang-vi h1, body.lang-vi .subtitle,
+body.lang-vi .q-label, body.lang-vi .q-input,
+body.lang-vi .spread-lbl, body.lang-vi .pos-label,
+body.lang-vi .reading-title, body.lang-vi .r-pos,
+body.lang-vi .r-name, body.lang-vi .r-kw, body.lang-vi .r-meaning,
+body.lang-vi .conclusion-title, body.lang-vi .conclusion-text,
+body.lang-vi .conclusion-advice h4, body.lang-vi .conclusion-advice li,
+body.lang-vi .instructions, body.lang-vi .btn,
+body.lang-vi .lang-toggle, body.lang-vi .nav-links a,
+body.lang-vi .cf-name, body.lang-vi .cf-kw {
+  font-family: 'Roboto', 'Times New Roman', sans-serif !important;
 }
 </style>
 </head>
@@ -867,6 +880,7 @@ let flippedCount = 0;
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'vi' : 'en';
   T = TRANSLATIONS[currentLang];
+  document.body.classList.toggle('lang-vi', currentLang === 'vi');
   applyLang();
 }
 
@@ -906,14 +920,14 @@ function applyLang() {
 
 function renderCardFront(cf, card) {
   const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
-  const suitDisplay = card.arcana === 'major' ? card.num : d.suit;
+  const suitDisplay = card.arcana === 'major' ? card.num : (currentLang === 'vi' ? card.suit : d.suit);
   cf.style.background = `linear-gradient(155deg,${card.col[0]} 0%,${card.col[1]} 60%,${card.col[0]} 100%)`;
   cf.innerHTML = `
     <div class="cf-inner">
       <div class="cf-orn">✦ · ✦</div>
       <div class="cf-num">${suitDisplay}</div>
       <div class="cf-sym">${card.sym}</div>
-      <div class="cf-name">${d.name}</div>
+      <div class="cf-name">${card.name}</div>
       <div class="cf-kw">${d.kw.join(' · ')}</div>
       <div class="cf-orn">✦ · ✦</div>
     </div>`;
@@ -1022,7 +1036,7 @@ function showReading() {
     <div class="card-reading" style="animation-delay:${i*.18}s">
       <div class="r-pos">${T.positions[i]}</div>
       <div class="r-sym">${card.sym}</div>
-      <div class="r-name">${d.name}</div>
+      <div class="r-name">${card.name}</div>
       <div class="r-kw">${d.kw.join(' · ')}</div>
       <div class="r-meaning">${d.meaning}</div>
     </div>`;
@@ -1043,6 +1057,10 @@ function generateConclusion() {
   const past = currentLang === 'vi' ? DECK_VI[drawnCards[0].id] : drawnCards[0];
   const present = currentLang === 'vi' ? DECK_VI[drawnCards[1].id] : drawnCards[1];
   const future = currentLang === 'vi' ? DECK_VI[drawnCards[2].id] : drawnCards[2];
+  // Always use English names for card names
+  const pastName = drawnCards[0].name;
+  const presentName = drawnCards[1].name;
+  const futureName = drawnCards[2].name;
 
   // Determine overall energy (positive/mixed/challenging)
   const challengeCards = ['Death','The Tower','The Devil','Five of Cups','Three of Swords','Ten of Swords','Nine of Swords','Five of Swords','Eight of Swords','Five of Pentacles'];
@@ -1059,24 +1077,24 @@ function generateConclusion() {
   if (positiveCount > challengeCount) {
     overallTone = isVi ? 'Năng lượng tổng thể: Tích cực' : 'Overall Energy: Positive';
     synthesis = isVi
-      ? `Bộ bài của bạn mang một thông điệp đầy hy vọng. Từ quá khứ với <strong>${past.name}</strong>, qua hiện tại với <strong>${present.name}</strong>, đến tương lai với <strong>${future.name}</strong> — có một dòng chảy tích cực đang dẫn dắt bạn. Vũ trụ đang ủng hộ hành trình của bạn.`
-      : `Your spread carries a hopeful message. From the past with <strong>${past.name}</strong>, through the present with <strong>${present.name}</strong>, to the future with <strong>${future.name}</strong> — there is a positive current guiding you. The universe supports your journey.`;
+      ? `Bộ bài của bạn mang một thông điệp đầy hy vọng. Từ quá khứ với <strong>${pastName}</strong>, qua hiện tại với <strong>${presentName}</strong>, đến tương lai với <strong>${futureName}</strong> — có một dòng chảy tích cực đang dẫn dắt bạn. Vũ trụ đang ủng hộ hành trình của bạn.`
+      : `Your spread carries a hopeful message. From the past with <strong>${pastName}</strong>, through the present with <strong>${presentName}</strong>, to the future with <strong>${futureName}</strong> — there is a positive current guiding you. The universe supports your journey.`;
     adviceItems = isVi
       ? ['Tin tưởng vào dòng chảy thuận lợi và tiếp tục tiến về phía trước','Tận dụng năng lượng tích cực để bắt đầu những dự án mới','Chia sẻ may mắn và ánh sáng của bạn với những người xung quanh']
       : ['Trust the favorable current and keep moving forward','Harness this positive energy to start new ventures','Share your good fortune and light with those around you'];
   } else if (challengeCount > positiveCount) {
     overallTone = isVi ? 'Năng lượng tổng thể: Thử thách' : 'Overall Energy: Challenging';
     synthesis = isVi
-      ? `Bộ bài cho thấy một giai đoạn thử thách. <strong>${past.name}</strong> trong quá khứ, <strong>${present.name}</strong> ở hiện tại, và <strong>${future.name}</strong> trong tương lai — tất cả đều nhắc nhở rằng khó khăn là bước đệm cho sự trưởng thành. Mỗi thử thách đều mang theo bài học quý giá.`
-      : `Your spread reveals a period of challenge. <strong>${past.name}</strong> in the past, <strong>${present.name}</strong> in the present, and <strong>${future.name}</strong> in the future — all remind you that difficulty is a stepping stone to growth. Every challenge carries a precious lesson.`;
+      ? `Bộ bài cho thấy một giai đoạn thử thách. <strong>${pastName}</strong> trong quá khứ, <strong>${presentName}</strong> ở hiện tại, và <strong>${futureName}</strong> trong tương lai — tất cả đều nhắc nhở rằng khó khăn là bước đệm cho sự trưởng thành. Mỗi thử thách đều mang theo bài học quý giá.`
+      : `Your spread reveals a period of challenge. <strong>${pastName}</strong> in the past, <strong>${presentName}</strong> in the present, and <strong>${futureName}</strong> in the future — all remind you that difficulty is a stepping stone to growth. Every challenge carries a precious lesson.`;
     adviceItems = isVi
       ? ['Kiên nhẫn và từ bi với bản thân trong giai đoạn này','Tìm kiếm sự hỗ trợ từ những người bạn tin tưởng','Nhớ rằng sau mỗi cơn bão, bầu trời lại trong xanh hơn']
       : ['Be patient and compassionate with yourself during this period','Seek support from those you trust','Remember that after every storm, the sky becomes clearer'];
   } else {
     overallTone = isVi ? 'Năng lượng tổng thể: Cân bằng' : 'Overall Energy: Balanced';
     synthesis = isVi
-      ? `Bộ bài của bạn phản ánh sự cân bằng giữa ánh sáng và bóng tối. <strong>${past.name}</strong> từ quá khứ, <strong>${present.name}</strong> ở hiện tại, và <strong>${future.name}</strong> cho tương lai — cho thấy cuộc sống đang ở trạng thái chuyển tiếp. Đây là thời điểm để suy ngẫm và chọn lựa con đường đúng đắn.`
-      : `Your spread reflects a balance between light and shadow. <strong>${past.name}</strong> from the past, <strong>${present.name}</strong> in the present, and <strong>${future.name}</strong> for the future — suggest life is in a state of transition. This is a time for reflection and choosing the right path.`;
+      ? `Bộ bài của bạn phản ánh sự cân bằng giữa ánh sáng và bóng tối. <strong>${pastName}</strong> từ quá khứ, <strong>${presentName}</strong> ở hiện tại, và <strong>${futureName}</strong> cho tương lai — cho thấy cuộc sống đang ở trạng thái chuyển tiếp. Đây là thời điểm để suy ngẫm và chọn lựa con đường đúng đắn.`
+      : `Your spread reflects a balance between light and shadow. <strong>${pastName}</strong> from the past, <strong>${presentName}</strong> in the present, and <strong>${futureName}</strong> for the future — suggest life is in a state of transition. This is a time for reflection and choosing the right path.`;
     adviceItems = isVi
       ? ['Dành thời gian suy ngẫm trước khi đưa ra quyết định quan trọng','Cân bằng giữa hành động và nghỉ ngơi','Lắng nghe trực giác — nó sẽ dẫn đường đúng lúc']
       : ['Take time to reflect before making important decisions','Balance action with rest and contemplation','Listen to your intuition — it will guide you at the right moment'];
