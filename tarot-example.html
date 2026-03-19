@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✦ The Mystic Tarot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void: #050403;
+  --deep: #0c0906;
+  --surface: #14100a;
+  --panel: #1a1410;
+  --border: #302418;
+  --gold: #c9a84c;
+  --gold-bright: #f0c96a;
+  --gold-light: #f0d080;
+  --gold-dim: #7a6030;
+  --ember: #d4622a;
+  --ember-dim: rgba(212,98,42,.25);
+  --teal: #1e8a8a;
+  --teal-bright: #3dbfbf;
+  --teal-dim: rgba(61,191,191,.2);
+  --parchment: #e8d5a3;
+  --parchment-2: #c4aa76;
+  --muted: #7a6a4a;
+  --text: #ddd0a8;
+  --text-dim: #a89070;
+  --glow-gold: rgba(201,168,76,.35);
+  --glow-teal: rgba(61,191,191,.25);
+  --glow-ember: rgba(212,98,42,.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.75;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: .4;
+  pointer-events: none;
+  z-index: 9999;
+}
+/* Custom cursor */
+#cursor {
+  position:fixed; width:10px; height:10px;
+  background:var(--gold-bright); border-radius:50%;
+  pointer-events:none; z-index:10001;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 8px 3px var(--glow-gold), 0 0 18px 6px rgba(201,168,76,.12);
+  transition:width .15s, height .15s;
+}
+#cursor-ring {
+  position:fixed; width:32px; height:32px;
+  border:1px solid rgba(201,168,76,.45);
+  border-radius:50%; pointer-events:none; z-index:10000;
+  transform:translate(-50%,-50%);
+  transition:transform .08s linear, width .2s, height .2s;
+}
+/* Canvas starfield */
+#cosmos { position:fixed; inset:0; z-index:0; pointer-events:none; }
+/* Scrollbar */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background:var(--void); }
+::-webkit-scrollbar-thumb { background:var(--gold-dim); border-radius:3px; }
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 7rem 1.5rem 3rem;
+  display: flex; flex-direction: column; align-items: center;
+}
+header { text-align: center; margin-bottom: 1.5rem; }
+.ornament { color: var(--gold); font-size: 1.1rem; letter-spacing: .5rem; margin-bottom: .4rem; }
+h1 {
+  font-family: 'Cinzel Decorative', 'Playfair Display', serif;
+  font-size: clamp(1.8rem,5vw,3.2rem);
+  color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,168,76,.5), 0 0 50px rgba(201,168,76,.2);
+  letter-spacing: .08em; line-height: 1.2;
+}
+.subtitle {
+  font-family: 'Cinzel', 'Playfair Display', serif; font-size: .75rem;
+  color: var(--text-dim); letter-spacing: .4em;
+  text-transform: uppercase; margin-top: .7rem;
+}
+.moons { text-align:center; font-size:1.1rem; opacity:.5; margin:.5rem 0; letter-spacing:.2rem; }
+.divider {
+  display:flex; align-items:center; gap:1rem;
+  margin:1.2rem 0; width:100%; max-width:600px;
+}
+.divider-line { flex:1; height:1px; background:linear-gradient(to right,transparent,var(--gold),transparent); }
+.divider-sym { color:var(--gold); font-size:.9rem; }
+.q-area { text-align:center; margin-bottom:2rem; }
+.q-label {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.7rem;
+  letter-spacing:.3em; color:var(--text-dim);
+  text-transform:uppercase; margin-bottom:.5rem;
+}
+.q-input {
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(201,168,76,.3);
+  border-radius:4px; color:var(--text);
+  font-family:'EB Garamond', Georgia, serif; font-size:1.05rem;
+  padding:.6rem 1.2rem; width:min(420px,90vw);
+  text-align:center; outline:none; transition:border-color .3s;
+}
+.q-input::placeholder { color:var(--text-dim); opacity:.7; }
+.q-input:focus { border-color:var(--gold); }
+.spread-lbl {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.72rem;
+  letter-spacing:.4em; color:var(--text-dim);
+  text-transform:uppercase; text-align:center; margin-bottom:1.5rem;
+}
+.cards-row {
+  display:flex; justify-content:center;
+  gap:clamp(.8rem,2.5vw,2rem); flex-wrap:wrap;
+}
+.card-slot { display:flex; flex-direction:column; align-items:center; gap:.8rem; }
+.pos-label {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.68rem;
+  letter-spacing:.3em; color:var(--teal-bright);
+  text-transform:uppercase; opacity:.85;
+  text-shadow:0 0 6px var(--glow-teal);
+}
+.card-wrap {
+  width:155px; height:272px;
+  perspective:1000px; cursor:none;
+}
+.card-inner {
+  position:relative; width:100%; height:100%;
+  transform-style:preserve-3d;
+  transition:transform .8s cubic-bezier(.175,.885,.32,1.275);
+}
+.card-wrap.flipped .card-inner { transform:rotateY(180deg); }
+.card-wrap:not(.flipped):hover .card-inner { transform:rotateY(14deg) translateY(-7px); }
+.card-face {
+  position:absolute; width:100%; height:100%;
+  backface-visibility:hidden; border-radius:12px; overflow:hidden;
+}
+.card-back {
+  background:linear-gradient(155deg, var(--surface), var(--panel), var(--surface));
+  border:2px solid rgba(201,168,76,.4);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 8px 35px rgba(0,0,0,.6), 0 0 18px rgba(61,191,191,.12);
+}
+.back-design {
+  width:85%; height:85%;
+  border:1px solid rgba(201,168,76,.3);
+  border-radius:8px; display:flex;
+  align-items:center; justify-content:center;
+  background:repeating-linear-gradient(45deg,transparent,transparent 9px,rgba(201,168,76,.05) 9px,rgba(201,168,76,.05) 18px);
+}
+.back-sym {
+  font-size:3.2rem; opacity:.6;
+  filter:drop-shadow(0 0 12px rgba(201,168,76,.7));
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.card-front {
+  transform:rotateY(180deg);
+  border:2px solid rgba(201,168,76,.55);
+  box-shadow:0 8px 35px rgba(0,0,0,.6), 0 0 22px rgba(201,168,76,.15);
+  display:flex; flex-direction:column;
+}
+.cf-inner {
+  width:100%; height:100%;
+  display:flex; flex-direction:column;
+  padding:9px; align-items:center;
+}
+.cf-orn { font-size:.48rem; color:rgba(201,168,76,.7); letter-spacing:.2em; }
+.cf-num {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.6rem;
+  color:rgba(201,168,76,.8); letter-spacing:.12em;
+  margin:.15rem 0;
+}
+.cf-sym {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  font-size:3.2rem;
+  filter:drop-shadow(0 0 12px rgba(255,255,255,.25));
+}
+.cf-name {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.57rem;
+  font-weight:600; letter-spacing:.1em;
+  color:var(--gold-light); text-align:center;
+  text-transform:uppercase; padding:3px 2px;
+  line-height:1.4;
+}
+.cf-kw {
+  font-size:.52rem; color:rgba(232,213,183,.6);
+  font-style:italic; text-align:center;
+  padding:0 4px 3px;
+}
+.card-wrap.flipped .card-front {
+  animation:revealGlow .5s ease-out .4s both;
+}
+@keyframes revealGlow {
+  0%{box-shadow:0 8px 35px rgba(0,0,0,.5), 0 0 50px rgba(201,168,76,.7)}
+  100%{box-shadow:0 8px 35px rgba(0,0,0,.5), 0 0 22px rgba(201,168,76,.15)}
+}
+.placeholder {
+  width:155px; height:272px;
+  border:1px dashed rgba(61,191,191,.12);
+  border-radius:12px; display:flex;
+  align-items:center; justify-content:center;
+}
+.ph-sym { color:rgba(61,191,191,.18); font-size:1.8rem; }
+.instructions {
+  text-align:center; font-size:.9rem;
+  color:var(--text-dim); font-style:italic;
+  margin-top:1.5rem; min-height:1.5rem;
+  transition:opacity .4s;
+}
+.controls { display:flex; gap:1rem; margin-top:2rem; flex-wrap:wrap; justify-content:center; }
+.btn {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.78rem;
+  letter-spacing:.28em; text-transform:uppercase;
+  padding:.75rem 2.2rem; border:1px solid var(--gold);
+  background:transparent; color:var(--gold);
+  cursor:none; border-radius:3px;
+  transition:all .3s; position:relative; overflow:hidden;
+}
+.btn::before {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(201,168,76,.12),transparent);
+  opacity:0; transition:opacity .3s;
+}
+.btn:hover::before { opacity:1; }
+.btn:hover { background:rgba(201,168,76,.08); box-shadow:0 0 22px rgba(201,168,76,.3); transform:translateY(-2px); }
+.btn:active { transform:translateY(0); }
+.btn-primary { background:linear-gradient(135deg,rgba(201,168,76,.12),rgba(61,191,191,.08)); }
+.btn-primary:hover { background:linear-gradient(135deg,rgba(201,168,76,.22),rgba(61,191,191,.14)); }
+.btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+.lang-toggle {
+  position:fixed; top:72px; right:1.2rem; display:inline-flex; align-items:center; z-index:101;
+  font-family:'Cinzel','Playfair Display',serif; font-size:.65rem;
+  letter-spacing:.2em; text-transform:uppercase;
+  padding:.45rem .9rem; border:1px solid var(--gold);
+  background:rgba(5,4,3,.85); color:var(--gold);
+  cursor:pointer; border-radius:3px;
+  backdrop-filter:blur(6px); transition:all .3s;
+}
+.lang-toggle:hover { background:rgba(201,168,76,.12); box-shadow:0 0 16px rgba(201,168,76,.3); }
+
+/* Reading panel */
+.reading-panel {
+  width:100%; max-width:920px;
+  margin-top:2.5rem; opacity:0;
+  transform:translateY(24px);
+  transition:all .7s ease; pointer-events:none;
+}
+.reading-panel.visible { opacity:1; transform:translateY(0); pointer-events:all; }
+.reading-title {
+  font-family:'Cinzel Decorative','Playfair Display',serif; font-size:1.05rem;
+  color:var(--gold); text-align:center; margin-bottom:1.8rem;
+  text-shadow:0 0 20px rgba(201,168,76,.4);
+}
+.card-readings { display:flex; gap:1.2rem; flex-wrap:wrap; justify-content:center; }
+.card-reading {
+  flex:1; min-width:220px; max-width:280px;
+  background:rgba(20,16,10,.8);
+  border:1px solid var(--border);
+  border-radius:8px; padding:1.4rem;
+  position:relative;
+  animation:fadeUp .5s ease both;
+}
+.card-reading::before {
+  content:''; position:absolute;
+  top:0; left:0; right:0; height:2px;
+  background:linear-gradient(to right,transparent,var(--teal),transparent);
+}
+.card-reading:hover { border-color:var(--gold-dim); }
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+.r-pos {
+  font-family:'Cinzel','Playfair Display',serif; font-size:.63rem;
+  letter-spacing:.3em; color:var(--teal-bright);
+  text-transform:uppercase; margin-bottom:.35rem;
+  text-shadow:0 0 5px var(--glow-teal);
+}
+.r-sym { font-size:1.5rem; margin-bottom:.4rem; }
+.r-name { font-family:'Cinzel','Playfair Display',serif; font-size:.95rem; color:var(--gold-light); margin-bottom:.5rem; }
+.r-kw { font-size:.8rem; color:var(--gold); font-style:italic; margin-bottom:.65rem; opacity:.85; }
+.r-meaning { font-size:.95rem; line-height:1.75; color:var(--text); opacity:.92; }
+
+/* Conclusion */
+.conclusion-box {
+  max-width:700px; margin:0 auto;
+  background:rgba(20,16,10,.8);
+  border:1px solid var(--border);
+  border-radius:8px; padding:1.8rem 1.6rem;
+  position:relative; text-align:center;
+}
+.conclusion-box::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(to right,transparent,var(--ember),transparent);
+}
+.conclusion-title {
+  font-family:'Cinzel Decorative','Playfair Display',serif;
+  font-size:1rem; color:var(--ember); margin-bottom:1rem;
+  text-shadow:0 0 14px var(--glow-ember);
+}
+.conclusion-text {
+  font-size:1rem; line-height:1.85; color:var(--text);
+  font-style:italic; opacity:.92;
+}
+.conclusion-advice {
+  margin-top:1.2rem; padding-top:1rem;
+  border-top:1px solid rgba(201,168,76,.15);
+}
+.conclusion-advice h4 {
+  font-family:'Cinzel',serif; font-size:.7rem;
+  letter-spacing:.25em; text-transform:uppercase;
+  color:var(--teal-bright); margin-bottom:.6rem;
+  text-shadow:0 0 6px var(--glow-teal);
+}
+.conclusion-advice ul {
+  list-style:none; padding:0; display:flex;
+  flex-direction:column; gap:.4rem; text-align:left;
+  max-width:500px; margin:0 auto;
+}
+.conclusion-advice li {
+  font-size:.92rem; line-height:1.65; color:var(--text);
+  padding-left:1.4rem; position:relative;
+}
+.conclusion-advice li::before {
+  content:'✦'; position:absolute; left:0; color:var(--ember); font-size:.7rem; top:.15rem;
+}
+
+/* Sparkle */
+.sparkle {
+  position:absolute; pointer-events:none;
+  animation:sparkAnim .9s ease-out forwards;
+  z-index:20;
+}
+@keyframes sparkAnim {
+  0%{opacity:1;transform:scale(0) translateY(0)}
+  50%{opacity:1;transform:scale(1.6) translateY(-18px)}
+  100%{opacity:0;transform:scale(.5) translateY(-48px)}
+}
+
+@media(max-width:560px){
+  .card-wrap{width:110px;height:193px;}
+  .cf-sym{font-size:2.3rem;}
+  .cf-name{font-size:.48rem;}
+  .back-sym{font-size:2.4rem;}
+}
+/* ── Navbar ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(5,4,3,.88);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(201,168,76,0.3);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 58px;
+}
+.nav-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 1rem;
+  color: var(--gold);
+  text-shadow: 0 0 14px rgba(201,168,76,0.5);
+  letter-spacing: .08em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.nav-links {
+  display: flex; align-items: center;
+  gap: 0.2rem; list-style: none;
+}
+.nav-links a {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: .45rem .9rem;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  transition: color .25s, border-color .25s, background .25s;
+}
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--gold-light);
+  border-color: rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.07);
+}
+.hamburger {
+  display: none; flex-direction: column; gap: 5px;
+  cursor: pointer; padding: .4rem; background: none; border: none;
+}
+.hamburger span {
+  display: block; width: 22px; height: 2px;
+  background: var(--gold); border-radius: 2px;
+  transition: transform .3s, opacity .3s;
+}
+@media (max-width: 640px) {
+  nav { padding: 0 1.2rem; }
+  .nav-links {
+    position: fixed; top: 58px; left: 0; right: 0;
+    flex-direction: column; align-items: stretch;
+    background: rgba(5,4,3,.97);
+    border-bottom: 1px solid rgba(201,168,76,0.3);
+    padding: .8rem 1.2rem 1rem;
+    gap: .1rem;
+    transform: translateY(-120%);
+    transition: transform .3s;
+  }
+  .nav-links.open { transform: translateY(0); }
+  .nav-links a { text-align: center; padding: .65rem; }
+  .hamburger { display: flex; }
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<canvas id="cosmos"></canvas>
+
+<!-- Navigation -->
+<nav>
+  <a class="nav-logo" href="mainpage.html">✦ Celestial Sanctum</a>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="mainpage.html">Home</a></li>
+    <li><a href="tarot-example.html" class="active">Tarot</a></li>
+    <li><a href="natal_chart.html">Astrology</a></li>
+    <li><a href="oracle.html">Oracle</a></li>
+    <li><a href="rituals.html">Rituals</a></li>
+    <li><a href="spirits.html">Spirit Guide</a></li>
+  </ul>
+</nav>
+
+<button class="lang-toggle" id="langBtn" onclick="toggleLang()">🌐 Vietnamese</button>
+
+<div class="wrap">
+  <header>
+    <div class="ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    <h1>The Mystic Tarot</h1>
+    <p class="subtitle">Three Card Spread &nbsp;·&nbsp; Past &nbsp;·&nbsp; Present &nbsp;·&nbsp; Future</p>
+    <div class="moons">🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘</div>
+  </header>
+
+  <div class="divider"><div class="divider-line"></div><span class="divider-sym">✦</span><div class="divider-line"></div></div>
+
+  <div class="q-area">
+    <div class="q-label">Contemplate your question</div>
+    <input class="q-input" type="text" placeholder="What guidance do you seek?" id="qInput">
+  </div>
+
+  <div style="width:100%;max-width:900px;">
+    <div class="spread-lbl">✦ &nbsp; Three Card Spread &nbsp; ✦</div>
+    <div class="cards-row" id="cardsRow"></div>
+    <p class="instructions" id="instr">Shuffle the deck to begin your reading…</p>
+    <div class="controls">
+      <button class="btn btn-primary" id="shuffleBtn" onclick="shuffleAndDeal()">✦ &nbsp; Shuffle &amp; Draw</button>
+      <button class="btn" id="resetBtn" style="display:none" onclick="resetReading()">↺ &nbsp; New Reading</button>
+    </div>
+  </div>
+
+  <div class="reading-panel" id="readingPanel">
+    <div class="divider"><div class="divider-line"></div><span class="divider-sym">✦</span><div class="divider-line"></div></div>
+    <div class="reading-title" id="readingTitle">✦ &nbsp; Your Reading &nbsp; ✦</div>
+    <div class="card-readings" id="cardReadings"></div>
+    <div id="conclusionArea" style="display:none;margin-top:2rem;animation:fadeUp .6s ease .4s both;">
+      <div class="divider"><div class="divider-line"></div><span class="divider-sym">☽</span><div class="divider-line"></div></div>
+      <div class="conclusion-box" id="conclusionBox"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DECK DATA (78 cards) ────────────────────────────────────────────────────
+const DECK = [
+  // MAJOR ARCANA
+  {id:0,name:"The Fool",arcana:"major",suit:null,num:"0",sym:"🌟",col:["#140630","#2d1575"],
+   kw:["New Beginnings","Innocence","Leap of Faith"],
+   meaning:"A new journey calls you forward. The Fool invites you to take a courageous leap into the unknown with an open heart — trust the adventure itself, for the path will appear beneath your feet."},
+  {id:1,name:"The Magician",arcana:"major",suit:null,num:"I",sym:"🪄",col:["#1a0a3d","#3d1a75"],
+   kw:["Willpower","Skill","Manifestation"],
+   meaning:"You already hold every tool you need. The Magician reveals your innate power to shape reality through focused intention and creative action. The time to act with purpose is now."},
+  {id:2,name:"The High Priestess",arcana:"major",suit:null,num:"II",sym:"🌙",col:["#0a1a3d","#1a2d75"],
+   kw:["Intuition","Mystery","Inner Knowing"],
+   meaning:"Look within — the answers you seek live beneath the surface. The High Priestess guards sacred knowledge and speaks through dreams and instinct. Trust the whispers of your subconscious."},
+  {id:3,name:"The Empress",arcana:"major",suit:null,num:"III",sym:"🌿",col:["#0d2a0d","#1a4d1a"],
+   kw:["Abundance","Nurturing","Fertility"],
+   meaning:"Life flourishes around you. The Empress embodies growth, creativity, and nurturing love. Allow yourself to receive as generously as you give — abundance is your natural state."},
+  {id:4,name:"The Emperor",arcana:"major",suit:null,num:"IV",sym:"👑",col:["#3d1a0a","#6b2f0f"],
+   kw:["Authority","Structure","Stability"],
+   meaning:"Build your foundations with intention. The Emperor calls for discipline and purposeful structure. True leadership means creating order that serves and protects — lead through wisdom, not force."},
+  {id:5,name:"The Hierophant",arcana:"major",suit:null,num:"V",sym:"🔑",col:["#1a0a3d","#3a1a70"],
+   kw:["Tradition","Wisdom","Mentorship"],
+   meaning:"Seek wisdom from proven paths. The Hierophant points to tradition, spiritual teaching, and the guidance of those who have walked this road before. A mentor or community holds a key for you."},
+  {id:6,name:"The Lovers",arcana:"major",suit:null,num:"VI",sym:"♥",col:["#3d0a1a","#6b0f2f"],
+   kw:["Love","Harmony","Meaningful Choice"],
+   meaning:"A profound choice calls you to follow your heart. The Lovers speak of deep connection and the alignment of values. Whichever path you choose, choose it with your whole self."},
+  {id:7,name:"The Chariot",arcana:"major",suit:null,num:"VII",sym:"⚡",col:["#1a1a0a","#3d3a0f"],
+   kw:["Victory","Willpower","Drive"],
+   meaning:"Victory belongs to those who steer with conviction. The Chariot calls you to harness opposing forces and charge confidently toward your goal. Your will is your most powerful weapon."},
+  {id:8,name:"Strength",arcana:"major",suit:null,num:"VIII",sym:"🦁",col:["#3d2a0a","#6b4a0f"],
+   kw:["Courage","Compassion","Inner Power"],
+   meaning:"True strength is soft. This card speaks of inner fortitude born from compassion and patience, not brute force. Face your fears with quiet grace — you are more powerful than you know."},
+  {id:9,name:"The Hermit",arcana:"major",suit:null,num:"IX",sym:"🕯️",col:["#0a1a1a","#0f3535"],
+   kw:["Solitude","Introspection","Inner Light"],
+   meaning:"Wisdom lives in stillness. The Hermit calls you inward — to retreat, reflect, and listen for the quiet truth beneath the noise of the world. Your inner light will guide others too."},
+  {id:10,name:"Wheel of Fortune",arcana:"major",suit:null,num:"X",sym:"☸️",col:["#1a0a3d","#3a2070"],
+   kw:["Cycles","Fate","Turning Point"],
+   meaning:"The wheel turns, as it always has. A new cycle is beginning — an opportunity shaped by the patterns you have set in motion. Embrace the flow of fate and seize this turning point."},
+  {id:11,name:"Justice",arcana:"major",suit:null,num:"XI",sym:"⚖️",col:["#1a0a0a","#3d0f0f"],
+   kw:["Truth","Fairness","Cause & Effect"],
+   meaning:"Every action has its echo. Justice demands honesty — with yourself and with others. Make your choices with integrity and accept their consequences with equanimity. Truth will prevail."},
+  {id:12,name:"The Hanged Man",arcana:"major",suit:null,num:"XII",sym:"🌊",col:["#0a1a3d","#0f2d6b"],
+   kw:["Surrender","Pause","New Perspective"],
+   meaning:"Let go, and suddenly everything shifts. The Hanged Man asks you to pause and willingly release control. In surrender — not defeat — a profound new perspective will reveal itself."},
+  {id:13,name:"Death",arcana:"major",suit:null,num:"XIII",sym:"🦋",col:["#0e0e0e","#1e1e1e"],
+   kw:["Transformation","Endings","Rebirth"],
+   meaning:"What ends makes room for what must begin. Do not fear this card — it speaks of powerful transformation, the shedding of an old skin. From this ending blooms something far greater."},
+  {id:14,name:"Temperance",arcana:"major",suit:null,num:"XIV",sym:"✨",col:["#0a1a3d","#1a3a6b"],
+   kw:["Balance","Patience","Flow"],
+   meaning:"Find your middle way. Temperance pours between two vessels — harmony, patience, the graceful blending of opposites. Peace is found not in extremes, but in the steady, flowing center."},
+  {id:15,name:"The Devil",arcana:"major",suit:null,num:"XV",sym:"🔗",col:["#1a0800","#3d1400"],
+   kw:["Shadow","Attachment","Liberation"],
+   meaning:"Face the chains you have forged. The Devil illuminates patterns of fear, addiction, or illusion that keep you bound. The liberating truth: awareness of the trap is already the first step out."},
+  {id:16,name:"The Tower",arcana:"major",suit:null,num:"XVI",sym:"⚡",col:["#2a0a0a","#5a0f0f"],
+   kw:["Upheaval","Revelation","Awakening"],
+   meaning:"Lightning strikes, and what is false must fall. The Tower brings sudden upheaval that dismantles false foundations. Though chaotic, this clearing is necessary — and liberating."},
+  {id:17,name:"The Star",arcana:"major",suit:null,num:"XVII",sym:"⭐",col:["#0a0a2a","#0f0f5a"],
+   kw:["Hope","Renewal","Faith"],
+   meaning:"After the storm, the stars emerge. The Star shines with pure, quiet hope. You are healing. A light guides you — trust it. The universe is benevolent, and so are you."},
+  {id:18,name:"The Moon",arcana:"major",suit:null,num:"XVIII",sym:"🌕",col:["#0a0a1a","#0f0f2d"],
+   kw:["Illusion","The Unconscious","Dreams"],
+   meaning:"Not all is as it appears in the silver light. The Moon walks the twilight world of dreams and shadows. Trust your deepest intuition, but name the fears that blur your vision."},
+  {id:19,name:"The Sun",arcana:"major",suit:null,num:"XIX",sym:"☀️",col:["#2a1800","#5a3800"],
+   kw:["Joy","Vitality","Success"],
+   meaning:"Let your light shine without apology. The Sun radiates joy, clarity, and magnificent vitality. A time of happiness and genuine success is upon you — step forward and celebrate your life."},
+  {id:20,name:"Judgement",arcana:"major",suit:null,num:"XX",sym:"🎺",col:["#1a0a2a","#3d1a5a"],
+   kw:["Awakening","Calling","Absolution"],
+   meaning:"A trumpet call to your highest self. Judgement speaks of profound awakening — the moment of honest reckoning that leads to renewal. Forgive the past completely; answer your true calling."},
+  {id:21,name:"The World",arcana:"major",suit:null,num:"XXI",sym:"🌍",col:["#0a1a0a","#1a3d1a"],
+   kw:["Completion","Integration","Achievement"],
+   meaning:"You have arrived. The World celebrates the wholeness of a completed cycle — achievement, integration, and the deep satisfaction of a journey fully lived. One door closes; a grander one opens."},
+
+  // WANDS (Fire · Action · Ambition)
+  {id:22,name:"Ace of Wands",arcana:"minor",suit:"Wands",num:"Ace",sym:"🔥",col:["#2a0800","#5c1600"],
+   kw:["Inspiration","Creative Spark","Initiative"],
+   meaning:"A bolt of creative fire ignites your path. The Ace of Wands heralds bold new beginnings — an inspired spark that, if acted upon with courage, has the power to transform everything."},
+  {id:23,name:"Two of Wands",arcana:"minor",suit:"Wands",num:"2",sym:"🗺️",col:["#2a0800","#5c1600"],
+   kw:["Planning","Vision","Future"],
+   meaning:"You stand at the threshold of possibility. Two of Wands calls you to plan boldly and gaze toward the horizon. Your vision is your power — map the path you intend to walk."},
+  {id:24,name:"Three of Wands",arcana:"minor",suit:"Wands",num:"3",sym:"⛵",col:["#2a0800","#5c1600"],
+   kw:["Expansion","Foresight","Progress"],
+   meaning:"Your ships are coming in. Early efforts are bearing fruit and opening new horizons. Look ahead with confidence — your ventures are gaining momentum beyond what you can currently see."},
+  {id:25,name:"Four of Wands",arcana:"minor",suit:"Wands",num:"4",sym:"🎉",col:["#2a0800","#5c1600"],
+   kw:["Celebration","Harmony","Home"],
+   meaning:"Pause and celebrate what you have built. Four of Wands brings joy, a deep sense of belonging, and the warmth of shared achievement. You have earned this happiness — let yourself feel it."},
+  {id:26,name:"Five of Wands",arcana:"minor",suit:"Wands",num:"5",sym:"⚔️",col:["#2a0800","#5c1600"],
+   kw:["Conflict","Competition","Challenge"],
+   meaning:"Friction is forging you. Five of Wands brings lively competition and creative conflict. Channel this energy wisely — the struggle itself is sharpening your skills and deepening your resolve."},
+  {id:27,name:"Six of Wands",arcana:"minor",suit:"Wands",num:"6",sym:"🏆",col:["#2a0800","#5c1600"],
+   kw:["Victory","Recognition","Triumph"],
+   meaning:"Step forward and accept your due. Six of Wands heralds public recognition and hard-won triumph. Let the acclaim fuel your next great venture — you have earned the right to shine."},
+  {id:28,name:"Seven of Wands",arcana:"minor",suit:"Wands",num:"7",sym:"🛡️",col:["#2a0800","#5c1600"],
+   kw:["Perseverance","Defense","Conviction"],
+   meaning:"Hold your ground. Seven of Wands demands you defend your position with conviction. Challenges will test your resolve, but your high ground is worth protecting — don't retreat now."},
+  {id:29,name:"Eight of Wands",arcana:"minor",suit:"Wands",num:"8",sym:"💫",col:["#2a0800","#5c1600"],
+   kw:["Swift Action","Movement","News"],
+   meaning:"Everything is moving quickly now. Eight of Wands brings rapid developments, exciting news, and a swirl of activity. Act decisively — the current is strong and the moment is ripe."},
+  {id:30,name:"Nine of Wands",arcana:"minor",suit:"Wands",num:"9",sym:"🌅",col:["#2a0800","#5c1600"],
+   kw:["Resilience","Persistence","Endurance"],
+   meaning:"You are battle-weary, but almost there. Nine of Wands speaks of hard-won resilience. Gather your strength for one final push — the persistence you have already shown is about to pay off."},
+  {id:31,name:"Ten of Wands",arcana:"minor",suit:"Wands",num:"10",sym:"🎒",col:["#2a0800","#5c1600"],
+   kw:["Burden","Responsibility","Overextension"],
+   meaning:"You are carrying too much alone. Ten of Wands warns of exhaustion and overextension. It is time to set down some burdens, delegate, and remember that not everything is yours to bear."},
+  {id:32,name:"Page of Wands",arcana:"minor",suit:"Wands",num:"Page",sym:"🌱",col:["#2a0800","#5c1600"],
+   kw:["Enthusiasm","Discovery","Free Spirit"],
+   meaning:"Embrace your sense of adventure. The Page of Wands embodies fresh enthusiasm and the excitement of new discovery. Follow your curiosity without overthinking — the world rewards the bold explorer."},
+  {id:33,name:"Knight of Wands",arcana:"minor",suit:"Wands",num:"Knight",sym:"🏇",col:["#2a0800","#5c1600"],
+   kw:["Action","Passion","Adventure"],
+   meaning:"Charge forward with everything you have. The Knight of Wands is driven, bold, and fearless. Channel this fiery momentum into decisive action — just aim before you leap."},
+  {id:34,name:"Queen of Wands",arcana:"minor",suit:"Wands",num:"Queen",sym:"🦊",col:["#2a0800","#5c1600"],
+   kw:["Charisma","Confidence","Determination"],
+   meaning:"Own your power with radiant grace. The Queen of Wands leads with passionate confidence and warm, fierce independence. Embody her fearless creativity — you light up every room you enter."},
+  {id:35,name:"King of Wands",arcana:"minor",suit:"Wands",num:"King",sym:"🦅",col:["#2a0800","#5c1600"],
+   kw:["Vision","Leadership","Mastery"],
+   meaning:"Lead with bold, inspiring vision. The King of Wands is the natural-born visionary — charismatic, masterful, and powerfully motivating. Step into your authority and set the world ablaze."},
+
+  // CUPS (Water · Emotion · Relationships)
+  {id:36,name:"Ace of Cups",arcana:"minor",suit:"Cups",num:"Ace",sym:"💧",col:["#0a0a2a","#0f1a5c"],
+   kw:["New Love","Compassion","Emotional Opening"],
+   meaning:"Your heart is opening to something beautiful. The Ace of Cups pours forth new emotional beginnings — love, compassion, and spiritual connection. Open yourself to receive this gift with wonder."},
+  {id:37,name:"Two of Cups",arcana:"minor",suit:"Cups",num:"2",sym:"🤝",col:["#0a0a2a","#0f1a5c"],
+   kw:["Partnership","Connection","Harmony"],
+   meaning:"A soul-level union is forming. Two of Cups speaks of deep mutual recognition and harmonious partnership. Something rare and beautiful is taking root between two people — honor it."},
+  {id:38,name:"Three of Cups",arcana:"minor",suit:"Cups",num:"3",sym:"🥂",col:["#0a0a2a","#0f1a5c"],
+   kw:["Celebration","Friendship","Community"],
+   meaning:"Celebrate with those you love. Three of Cups brings joyful reunion and heartfelt community. Release any isolation and revel in the abundance of genuine human connection around you."},
+  {id:39,name:"Four of Cups",arcana:"minor",suit:"Cups",num:"4",sym:"🌧️",col:["#0a0a2a","#0f1a5c"],
+   kw:["Apathy","Contemplation","Reevaluation"],
+   meaning:"Don't miss what is being offered. Four of Cups speaks of inward contemplation and mild disillusionment. A new opportunity is appearing before you — look up from your brooding before it passes."},
+  {id:40,name:"Five of Cups",arcana:"minor",suit:"Cups",num:"5",sym:"😔",col:["#0a0a2a","#0f1a5c"],
+   kw:["Grief","Loss","Regret"],
+   meaning:"Mourn what is gone, but look to what remains. Five of Cups asks you to acknowledge genuine loss without losing sight of the cups still standing. Healing always begins with honest acknowledgment."},
+  {id:41,name:"Six of Cups",arcana:"minor",suit:"Cups",num:"6",sym:"🌸",col:["#0a0a2a","#0f1a5c"],
+   kw:["Nostalgia","Innocence","The Past"],
+   meaning:"The past returns with sweetness. Six of Cups evokes the warmth of fond memories and childhood innocence. A person or situation from your past re-emerges — it may carry gifts of healing."},
+  {id:42,name:"Seven of Cups",arcana:"minor",suit:"Cups",num:"7",sym:"🌌",col:["#0a0a2a","#0f1a5c"],
+   kw:["Choices","Fantasy","Illusion"],
+   meaning:"Discern dream from reality. Seven of Cups fills your mind with tempting visions and possibilities. Imagination is a gift, but wishful thinking is a trap — ground your desires in what is genuinely real."},
+  {id:43,name:"Eight of Cups",arcana:"minor",suit:"Cups",num:"8",sym:"🚶",col:["#0a0a2a","#0f1a5c"],
+   kw:["Letting Go","Moving On","Seeking More"],
+   meaning:"It is time to walk away. Eight of Cups asks for the quiet courage to leave behind what no longer fulfills you. The heart knows — something more meaningful is waiting further along the path."},
+  {id:44,name:"Nine of Cups",arcana:"minor",suit:"Cups",num:"9",sym:"😊",col:["#0a0a2a","#0f1a5c"],
+   kw:["Contentment","Wishes","Satisfaction"],
+   meaning:"Your wish is granted. Nine of Cups is the wish card — emotional fulfillment and the deep satisfaction of having what you truly desire. Allow yourself to feel this happiness fully and without guilt."},
+  {id:45,name:"Ten of Cups",arcana:"minor",suit:"Cups",num:"10",sym:"🏠",col:["#0a0a2a","#0f1a5c"],
+   kw:["Bliss","Family","Lasting Joy"],
+   meaning:"True happiness is yours. Ten of Cups is the pinnacle of emotional fulfillment — deep love, harmonious connection, and a lasting sense of joy and belonging. Your heart has found its home."},
+  {id:46,name:"Page of Cups",arcana:"minor",suit:"Cups",num:"Page",sym:"🐟",col:["#0a0a2a","#0f1a5c"],
+   kw:["Intuition","Sensitivity","Messages"],
+   meaning:"A message arrives from the heart. The Page of Cups is gentle, intuitive, and richly imaginative. Pay close attention to dreams, signs, and synchronicities — your subconscious is speaking."},
+  {id:47,name:"Knight of Cups",arcana:"minor",suit:"Cups",num:"Knight",sym:"🐎",col:["#0a0a2a","#0f1a5c"],
+   kw:["Romance","Idealism","Heartfelt Quest"],
+   meaning:"Follow what stirs your soul. The Knight of Cups rides toward beauty and meaning, guided by emotion and inspired by love. He arrives bearing a heartfelt message — be open to what it reveals."},
+  {id:48,name:"Queen of Cups",arcana:"minor",suit:"Cups",num:"Queen",sym:"🌊",col:["#0a0a2a","#0f1a5c"],
+   kw:["Compassion","Empathy","Nurturing Wisdom"],
+   meaning:"Lead with deep, compassionate wisdom. The Queen of Cups holds space for everyone's emotions while staying rooted in her own truth. Her gift is to love without losing herself."},
+  {id:49,name:"King of Cups",arcana:"minor",suit:"Cups",num:"King",sym:"🔱",col:["#0a0a2a","#0f1a5c"],
+   kw:["Emotional Mastery","Wisdom","Diplomacy"],
+   meaning:"Master your emotional world. The King of Cups is compassionate yet composed — he feels everything deeply but is not ruled by his feelings. He is the model of emotionally mature, generous leadership."},
+
+  // SWORDS (Air · Mind · Truth)
+  {id:50,name:"Ace of Swords",arcana:"minor",suit:"Swords",num:"Ace",sym:"🗡️",col:["#101020","#1a1a30"],
+   kw:["Clarity","Truth","Breakthrough"],
+   meaning:"Truth cuts through the fog. The Ace of Swords delivers a breakthrough of mental clarity. Speak your truth, make your decision, see through the illusion — this is a moment of great intellectual power."},
+  {id:51,name:"Two of Swords",arcana:"minor",suit:"Swords",num:"2",sym:"🤐",col:["#101020","#1a1a30"],
+   kw:["Stalemate","Avoidance","Decision"],
+   meaning:"You cannot postpone this choice forever. Two of Swords shows a stalemate born from avoidance. Remove the blindfold — only by honestly seeing the situation before you can you find your way through."},
+  {id:52,name:"Three of Swords",arcana:"minor",suit:"Swords",num:"3",sym:"💔",col:["#101020","#1a1a30"],
+   kw:["Heartbreak","Sorrow","Grief"],
+   meaning:"Allow yourself to grieve. Three of Swords confronts you with pain or difficult truth. Acknowledge the wound fully — suppressing it only deepens it. Healing always begins with honest tears."},
+  {id:53,name:"Four of Swords",arcana:"minor",suit:"Swords",num:"4",sym:"🛌",col:["#101020","#1a1a30"],
+   kw:["Rest","Recovery","Contemplation"],
+   meaning:"Be still and recover. Four of Swords calls for deep rest and recuperation after struggle. Withdraw, breathe, and let your mind restore — strategic stillness now will renew your strength."},
+  {id:54,name:"Five of Swords",arcana:"minor",suit:"Swords",num:"5",sym:"💬",col:["#101020","#1a1a30"],
+   kw:["Conflict","Hollow Victory","Ego"],
+   meaning:"Winning at any cost is no victory at all. Five of Swords warns of ego-driven conflict and the wounds that linger after needless battles. Choose your battles wisely — is this fight worth the price?"},
+  {id:55,name:"Six of Swords",arcana:"minor",suit:"Swords",num:"6",sym:"⛵",col:["#101020","#1a1a30"],
+   kw:["Transition","Healing","Moving On"],
+   meaning:"You are moving toward calmer waters. Six of Swords carries you gently away from turbulence. Though you bring your troubles with you, the journey leads toward peace, clarity, and renewal."},
+  {id:56,name:"Seven of Swords",arcana:"minor",suit:"Swords",num:"7",sym:"🎭",col:["#101020","#1a1a30"],
+   kw:["Strategy","Cunning","Deception"],
+   meaning:"Mind your tactics — and others'. Seven of Swords warns of strategic deception, from others or within yourself. Be discerning about trust and ensure your own approach remains entirely ethical."},
+  {id:57,name:"Eight of Swords",arcana:"minor",suit:"Swords",num:"8",sym:"🙈",col:["#101020","#1a1a30"],
+   kw:["Restriction","Self-Imprisonment","Victim Mentality"],
+   meaning:"Your bonds are mostly in your mind. Eight of Swords reveals self-imposed restriction. The blindfold is yours to remove — your perceived helplessness is the only truly binding trap here."},
+  {id:58,name:"Nine of Swords",arcana:"minor",suit:"Swords",num:"9",sym:"😰",col:["#101020","#1a1a30"],
+   kw:["Anxiety","Nightmares","Worry"],
+   meaning:"Fear is not the same as fact. Nine of Swords speaks of midnight anxiety and a racing, tormented mind. Most of what terrifies you in the dark will not survive the honest light of day."},
+  {id:59,name:"Ten of Swords",arcana:"minor",suit:"Swords",num:"10",sym:"🌅",col:["#101020","#1a1a30"],
+   kw:["Painful Ending","Finality","Rock Bottom"],
+   meaning:"What is over is truly over — and that is the gift. Ten of Swords marks the painful but necessary end of a cycle. The depth of this ending means the only direction now is upward. Dawn follows."},
+  {id:60,name:"Page of Swords",arcana:"minor",suit:"Swords",num:"Page",sym:"📜",col:["#101020","#1a1a30"],
+   kw:["Curiosity","Vigilance","Sharp Mind"],
+   meaning:"Stay alert and endlessly curious. The Page of Swords is intellectually keen, inquisitive, and watchful. New information is incoming — remain open, ask exactly the right questions."},
+  {id:61,name:"Knight of Swords",arcana:"minor",suit:"Swords",num:"Knight",sym:"⚔️",col:["#101020","#1a1a30"],
+   kw:["Ambition","Speed","Assertiveness"],
+   meaning:"Charge forward on your convictions. The Knight of Swords is swift, razor-sharp, and fiercely principled. Act boldly on what you know to be true — but ensure your clarity matches your speed."},
+  {id:62,name:"Queen of Swords",arcana:"minor",suit:"Swords",num:"Queen",sym:"🗡️",col:["#101020","#1a1a30"],
+   kw:["Sharp Clarity","Independence","Honesty"],
+   meaning:"See clearly and speak honestly. The Queen of Swords cuts through pretense with precise, earned wisdom. She values truth above comfort and leads from a place of clear-eyed, compassionate honesty."},
+  {id:63,name:"King of Swords",arcana:"minor",suit:"Swords",num:"King",sym:"👁️",col:["#101020","#1a1a30"],
+   kw:["Intellect","Authority","Ethical Judgment"],
+   meaning:"Lead with the power of a clear and ethical mind. The King of Swords commands through intellectual authority and integrity. He is the master strategist who speaks truth and judges with justice."},
+
+  // PENTACLES (Earth · Material · Practical)
+  {id:64,name:"Ace of Pentacles",arcana:"minor",suit:"Pentacles",num:"Ace",sym:"🌱",col:["#0a1a0a","#0f2d0f"],
+   kw:["Opportunity","Prosperity","New Path"],
+   meaning:"A door of real-world opportunity opens before you. The Ace of Pentacles is the seed of lasting prosperity — a new financial venture or practical path that, carefully tended, will bear rich fruit."},
+  {id:65,name:"Two of Pentacles",arcana:"minor",suit:"Pentacles",num:"2",sym:"⚖️",col:["#0a1a0a","#0f2d0f"],
+   kw:["Balance","Adaptability","Juggling"],
+   meaning:"Life is asking you to stay nimble. Two of Pentacles calls for flexibility as multiple demands compete for your attention. Enjoy the dance of balance — just don't drop what matters most."},
+  {id:66,name:"Three of Pentacles",arcana:"minor",suit:"Pentacles",num:"3",sym:"🏛️",col:["#0a1a0a","#0f2d0f"],
+   kw:["Teamwork","Craftsmanship","Collaboration"],
+   meaning:"Great work is built together. Three of Pentacles celebrates skilled collaboration and the deep satisfaction of mastery applied to meaningful work. Your contribution is seen and valued."},
+  {id:67,name:"Four of Pentacles",arcana:"minor",suit:"Pentacles",num:"4",sym:"🔒",col:["#0a1a0a","#0f2d0f"],
+   kw:["Security","Control","Possessiveness"],
+   meaning:"Security is wise; hoarding is a trap. Four of Pentacles reflects a desire for stability, but warns against gripping resources so tightly that generosity and growth become impossible."},
+  {id:68,name:"Five of Pentacles",arcana:"minor",suit:"Pentacles",num:"5",sym:"❄️",col:["#0a1a0a","#0f2d0f"],
+   kw:["Hardship","Isolation","Lack"],
+   meaning:"Help is closer than you think. Five of Pentacles speaks of material hardship and the cold of feeling excluded. Look up — the light in the window is real. Reach out and accept support."},
+  {id:69,name:"Six of Pentacles",arcana:"minor",suit:"Pentacles",num:"6",sym:"🤲",col:["#0a1a0a","#0f2d0f"],
+   kw:["Generosity","Charity","Reciprocity"],
+   meaning:"Give and receive with open hands. Six of Pentacles speaks of generous exchange and the balanced flow of resources. Share your abundance freely, and be gracious enough to receive when in need."},
+  {id:70,name:"Seven of Pentacles",arcana:"minor",suit:"Pentacles",num:"7",sym:"🌿",col:["#0a1a0a","#0f2d0f"],
+   kw:["Patience","Investment","Assessment"],
+   meaning:"Step back and evaluate your harvest. Seven of Pentacles is the card of patient investment and honest appraisal. Is your time and energy flowing toward what will truly bear the best fruit?"},
+  {id:71,name:"Eight of Pentacles",arcana:"minor",suit:"Pentacles",num:"8",sym:"🔨",col:["#0a1a0a","#0f2d0f"],
+   kw:["Craftsmanship","Dedication","Skill-Building"],
+   meaning:"Mastery comes through devoted practice. Eight of Pentacles celebrates diligent, focused work and the joy of genuinely developing a skill. Attend to the details — excellence will follow."},
+  {id:72,name:"Nine of Pentacles",arcana:"minor",suit:"Pentacles",num:"9",sym:"🦚",col:["#0a1a0a","#0f2d0f"],
+   kw:["Abundance","Independence","Refinement"],
+   meaning:"Enjoy the fruits of your labor with elegance. Nine of Pentacles speaks of graceful self-sufficiency and the quiet pleasure of material comfort you have built through your own disciplined effort."},
+  {id:73,name:"Ten of Pentacles",arcana:"minor",suit:"Pentacles",num:"10",sym:"🏰",col:["#0a1a0a","#0f2d0f"],
+   kw:["Legacy","Lasting Wealth","Family"],
+   meaning:"You are building something that endures. Ten of Pentacles represents lasting wealth, a family legacy, and the deep satisfaction of creating something of enduring value for generations to come."},
+  {id:74,name:"Page of Pentacles",arcana:"minor",suit:"Pentacles",num:"Page",sym:"📚",col:["#0a1a0a","#0f2d0f"],
+   kw:["Ambition","Study","Diligence"],
+   meaning:"Learn with earnest, grounded dedication. The Page of Pentacles is studious, methodical, and practical. A new opportunity in the real world beckons — approach it with focused, patient attention."},
+  {id:75,name:"Knight of Pentacles",arcana:"minor",suit:"Pentacles",num:"Knight",sym:"🐂",col:["#0a1a0a","#0f2d0f"],
+   kw:["Reliability","Hard Work","Persistence"],
+   meaning:"Slow, steady, and utterly dependable. The Knight of Pentacles moves methodically and honors every commitment. His patient, steadfast approach ensures that every goal he sets is eventually achieved."},
+  {id:76,name:"Queen of Pentacles",arcana:"minor",suit:"Pentacles",num:"Queen",sym:"🦌",col:["#0a1a0a","#0f2d0f"],
+   kw:["Nurturing","Practicality","Warmth"],
+   meaning:"Create abundance with warmth and skill. The Queen of Pentacles blends material mastery with nurturing generosity. She builds a space of real comfort and abundance for herself and everyone she loves."},
+  {id:77,name:"King of Pentacles",arcana:"minor",suit:"Pentacles",num:"King",sym:"🏔️",col:["#0a1a0a","#0f2d0f"],
+   kw:["Wealth","Stability","Enduring Leadership"],
+   meaning:"Build an empire that lasts. The King of Pentacles has achieved mastery in the material world through vision and patience. From his mountain of solid security, he leads and provides with absolute confidence."},
+];
+
+// ─── DECK (VIETNAMESE) ────────────────────────────────────────────────────────
+const DECK_VI = [
+  // MAJOR ARCANA
+  {name:"Kẻ Khờ",kw:["Khởi Đầu Mới","Ngây Thơ","Bước Nhảy Đức Tin"],meaning:"Một hành trình mới đang gọi bạn tiến lên. Kẻ Khờ mời bạn dũng cảm bước vào những điều chưa biết với trái tim rộng mở — hãy tin tưởng vào cuộc phiêu lưu, vì con đường sẽ hiện ra dưới chân bạn."},
+  {name:"Nhà Ảo Thuật",kw:["Ý Chí","Kỹ Năng","Biểu Hiện"],meaning:"Bạn đã có mọi công cụ cần thiết. Nhà Ảo Thuật tiết lộ sức mạnh bẩm sinh của bạn để định hình thực tại qua ý định tập trung và hành động sáng tạo. Đây là lúc hành động có mục đích."},
+  {name:"Nữ Tu Trưởng",kw:["Trực Giác","Huyền Bí","Trí Tuệ Nội Tâm"],meaning:"Hãy nhìn vào bên trong — những câu trả lời bạn tìm kiếm sống dưới bề mặt. Nữ Tu Trưởng bảo vệ tri thức thiêng liêng và nói qua những giấc mơ và bản năng. Hãy tin vào tiếng thì thầm của tiềm thức."},
+  {name:"Nữ Hoàng",kw:["Sung Túc","Nuôi Dưỡng","Màu Mỡ"],meaning:"Cuộc sống nở rộ xung quanh bạn. Nữ Hoàng hiện thân sự tăng trưởng, sáng tạo và tình yêu nuôi dưỡng. Hãy để bản thân nhận lại hào phóng như bạn đã cho — sung túc là trạng thái tự nhiên của bạn."},
+  {name:"Hoàng Đế",kw:["Quyền Uy","Cấu Trúc","Ổn Định"],meaning:"Xây dựng nền tảng với chủ đích. Hoàng Đế kêu gọi kỷ luật và cấu trúc có mục đích. Lãnh đạo thực sự có nghĩa là tạo ra trật tự phục vụ và bảo vệ — lãnh đạo bằng trí tuệ, không phải bằng vũ lực."},
+  {name:"Đại Giáo Sư",kw:["Truyền Thống","Trí Tuệ","Cố Vấn"],meaning:"Tìm kiếm trí tuệ từ những con đường đã được chứng minh. Đại Giáo Sư chỉ đến truyền thống, giảng dạy tâm linh và sự hướng dẫn của những người đã đi trước. Một người cố vấn hoặc cộng đồng có một chìa khóa cho bạn."},
+  {name:"Những Người Yêu",kw:["Tình Yêu","Hòa Hợp","Lựa Chọn Ý Nghĩa"],meaning:"Một lựa chọn sâu sắc kêu gọi bạn đi theo trái tim. Những Người Yêu nói về kết nối sâu sắc và sự liên kết của các giá trị. Dù bạn chọn con đường nào, hãy chọn bằng cả tâm hồn."},
+  {name:"Cỗ Xe",kw:["Chiến Thắng","Ý Chí","Quyết Tâm"],meaning:"Chiến thắng thuộc về người lái xe với niềm tin. Cỗ Xe kêu gọi bạn kiểm soát những lực lượng đối lập và tự tin tiến về phía mục tiêu. Ý chí của bạn là vũ khí mạnh nhất."},
+  {name:"Sức Mạnh",kw:["Dũng Cảm","Từ Bi","Sức Mạnh Nội Tâm"],meaning:"Sức mạnh thực sự là mềm mại. Lá này nói về sự kiên cường nội tâm sinh ra từ lòng từ bi và sự kiên nhẫn, không phải sức mạnh thô. Đối mặt nỗi sợ với sự ân cần yên lặng — bạn mạnh hơn bạn biết."},
+  {name:"Ẩn Sĩ",kw:["Cô Đơn","Nội Tâm","Ánh Sáng Nội Tâm"],meaning:"Trí tuệ sống trong sự tĩnh lặng. Ẩn Sĩ kêu gọi bạn hướng vào trong — để rút lui, suy ngẫm và lắng nghe sự thật yên lặng bên dưới tiếng ồn của thế giới. Ánh sáng nội tâm của bạn cũng sẽ dẫn đường cho người khác."},
+  {name:"Bánh Xe Vận Mệnh",kw:["Chu Kỳ","Định Mệnh","Bước Ngoặt"],meaning:"Bánh xe quay, như nó đã luôn quay. Một chu kỳ mới đang bắt đầu — một cơ hội được định hình bởi những khuôn mẫu bạn đã thiết lập. Hãy đón nhận dòng chảy của định mệnh và nắm lấy bước ngoặt này."},
+  {name:"Công Lý",kw:["Sự Thật","Công Bằng","Nhân Quả"],meaning:"Mỗi hành động đều có tiếng vang. Công Lý đòi hỏi sự trung thực — với bản thân và với người khác. Hãy đưa ra lựa chọn với chính trực và chấp nhận hậu quả của chúng một cách bình thản. Sự thật sẽ chiến thắng."},
+  {name:"Người Bị Treo",kw:["Buông Bỏ","Dừng Lại","Góc Nhìn Mới"],meaning:"Buông bỏ, và đột nhiên mọi thứ thay đổi. Người Bị Treo yêu cầu bạn dừng lại và tự nguyện buông bỏ kiểm soát. Trong sự buông bỏ — không phải thất bại — một góc nhìn mới sâu sắc sẽ tự lộ ra."},
+  {name:"Tử Thần",kw:["Biến Đổi","Kết Thúc","Tái Sinh"],meaning:"Những gì kết thúc nhường chỗ cho những gì phải bắt đầu. Đừng sợ lá này — nó nói về sự biến đổi mạnh mẽ, sự lột xác cũ. Từ kết thúc này nở ra điều gì đó vĩ đại hơn nhiều."},
+  {name:"Điều Độ",kw:["Cân Bằng","Kiên Nhẫn","Dòng Chảy"],meaning:"Tìm con đường trung đạo. Điều Độ rót giữa hai bình — hòa hợp, kiên nhẫn, sự pha trộn ân cần của những điều đối lập. Bình yên được tìm thấy không phải ở cực đoan, mà ở trung tâm ổn định, chảy đều."},
+  {name:"Ác Quỷ",kw:["Bóng Tối","Sự Gắn Bó","Giải Phóng"],meaning:"Đối mặt với những xiềng xích bạn đã tự rèn. Ác Quỷ chiếu sáng những khuôn mẫu sợ hãi, nghiện ngập hoặc ảo tưởng giữ bạn bị ràng buộc. Sự thật giải phóng: nhận thức được bẫy đã là bước đầu tiên thoát ra."},
+  {name:"Tháp",kw:["Biến Động","Mặc Khải","Thức Tỉnh"],meaning:"Sét đánh, và những gì sai phải đổ. Tháp mang đến biến động đột ngột phá hủy những nền tảng giả tạo. Dù hỗn loạn, sự thanh lọc này là cần thiết — và giải phóng."},
+  {name:"Ngôi Sao",kw:["Hy Vọng","Đổi Mới","Niềm Tin"],meaning:"Sau cơn bão, những ngôi sao xuất hiện. Ngôi Sao tỏa sáng với hy vọng thuần khiết và yên lặng. Bạn đang chữa lành. Một ánh sáng dẫn đường bạn — hãy tin tưởng vào nó. Vũ trụ tốt lành, và bạn cũng vậy."},
+  {name:"Mặt Trăng",kw:["Ảo Tưởng","Tiềm Thức","Giấc Mơ"],meaning:"Không phải tất cả đều như vẻ ngoài trong ánh sáng bạc. Mặt Trăng bước qua thế giới hoàng hôn của những giấc mơ và bóng tối. Tin vào trực giác sâu nhất, nhưng hãy đặt tên cho những nỗi sợ làm mờ tầm nhìn."},
+  {name:"Mặt Trời",kw:["Niềm Vui","Sinh Lực","Thành Công"],meaning:"Hãy để ánh sáng của bạn tỏa sáng không xin lỗi. Mặt Trời tỏa ra niềm vui, sự rõ ràng và sinh lực tuyệt vời. Một thời kỳ hạnh phúc và thành công thực sự đang đến — bước lên và ăn mừng cuộc sống của bạn."},
+  {name:"Phán Xét",kw:["Thức Tỉnh","Sứ Mệnh","Tha Thứ"],meaning:"Một tiếng kèn gọi đến bản thân cao nhất của bạn. Phán Xét nói về sự thức tỉnh sâu sắc — khoảnh khắc thanh toán trung thực dẫn đến sự đổi mới. Tha thứ hoàn toàn cho quá khứ; hãy trả lời tiếng gọi thực sự của bạn."},
+  {name:"Thế Giới",kw:["Hoàn Thành","Tích Hợp","Thành Tựu"],meaning:"Bạn đã đến nơi. Thế Giới ăn mừng sự toàn vẹn của một chu kỳ hoàn thành — thành tích, tích hợp và sự thỏa mãn sâu sắc của một hành trình được sống trọn vẹn. Một cánh cửa đóng lại; một cánh cửa lớn hơn mở ra."},
+  // WANDS
+  {name:"Át Gậy",suit:"Gậy",kw:["Cảm Hứng","Tia Sáng Sáng Tạo","Chủ Động"],meaning:"Một tia lửa sáng tạo bùng cháy trên con đường. Át Gậy báo hiệu khởi đầu mới táo bạo — tia cảm hứng, nếu được hành động với lòng dũng cảm, có sức mạnh biến đổi mọi thứ."},
+  {name:"Hai Gậy",suit:"Gậy",kw:["Lên Kế Hoạch","Tầm Nhìn","Tương Lai"],meaning:"Bạn đứng ở ngưỡng cửa của khả năng. Hai Gậy kêu gọi bạn lên kế hoạch táo bạo và nhìn về phía chân trời. Tầm nhìn của bạn là sức mạnh — hãy vạch ra con đường bạn định đi."},
+  {name:"Ba Gậy",suit:"Gậy",kw:["Mở Rộng","Nhìn Xa","Tiến Bộ"],meaning:"Những con tàu của bạn đang trở về. Những nỗ lực ban đầu đang mang lại quả và mở ra những chân trời mới. Hãy nhìn về phía trước với sự tự tin — những cuộc phiêu lưu của bạn đang tăng đà."},
+  {name:"Bốn Gậy",suit:"Gậy",kw:["Ăn Mừng","Hòa Hợp","Nhà"],meaning:"Dừng lại và ăn mừng những gì bạn đã xây dựng. Bốn Gậy mang lại niềm vui, cảm giác thuộc về sâu sắc và sự ấm áp của thành tích chung. Bạn xứng đáng với hạnh phúc này — hãy để mình cảm nhận nó."},
+  {name:"Năm Gậy",suit:"Gậy",kw:["Xung Đột","Cạnh Tranh","Thách Thức"],meaning:"Ma sát đang rèn giũa bạn. Năm Gậy mang đến sự cạnh tranh sôi nổi và xung đột sáng tạo. Hãy khai thác năng lượng này một cách khôn ngoan — cuộc đấu tranh đang mài sắc kỹ năng và củng cố ý chí."},
+  {name:"Sáu Gậy",suit:"Gậy",kw:["Chiến Thắng","Được Công Nhận","Thành Tích"],meaning:"Bước lên và nhận phần thưởng của bạn. Sáu Gậy báo hiệu sự công nhận công khai và thành công khó giành được. Hãy để danh tiếng thúc đẩy cuộc phiêu lưu tiếp theo — bạn xứng đáng được tỏa sáng."},
+  {name:"Bảy Gậy",suit:"Gậy",kw:["Kiên Trì","Bảo Vệ","Niềm Tin"],meaning:"Giữ vững lập trường. Bảy Gậy đòi hỏi bạn bảo vệ vị trí với niềm tin. Những thách thức sẽ kiểm tra ý chí, nhưng vị trí cao của bạn đáng được bảo vệ — đừng rút lui ngay bây giờ."},
+  {name:"Tám Gậy",suit:"Gậy",kw:["Hành Động Nhanh","Chuyển Động","Tin Tức"],meaning:"Mọi thứ đang di chuyển nhanh chóng. Tám Gậy mang đến những phát triển nhanh, tin tức thú vị và một xoáy hoạt động. Hãy hành động quyết đoán — dòng chảy đang mạnh và thời điểm đã chín muồi."},
+  {name:"Chín Gậy",suit:"Gậy",kw:["Khả Năng Phục Hồi","Kiên Trì","Chịu Đựng"],meaning:"Bạn mệt mỏi sau chiến trận, nhưng gần đích rồi. Chín Gậy nói về sự kiên cường khó giành được. Hãy tập hợp sức mạnh cho một cú đẩy cuối cùng — sự kiên trì bạn đã thể hiện sắp được đền đáp."},
+  {name:"Mười Gậy",suit:"Gậy",kw:["Gánh Nặng","Trách Nhiệm","Quá Tải"],meaning:"Bạn đang gánh quá nhiều một mình. Mười Gậy cảnh báo về sự kiệt sức và quá tải. Đã đến lúc đặt xuống một số gánh nặng, ủy thác và nhớ rằng không phải mọi thứ đều là của bạn để gánh."},
+  {name:"Tiểu Thư Gậy",suit:"Gậy",kw:["Nhiệt Tình","Khám Phá","Tinh Thần Tự Do"],meaning:"Hãy đón nhận tinh thần phiêu lưu của bạn. Tiểu Thư Gậy hiện thân sự nhiệt tình mới và sự hứng thú của những khám phá mới. Hãy theo đuổi sự tò mò mà không suy nghĩ quá nhiều — thế giới thưởng cho những nhà thám hiểm táo bạo."},
+  {name:"Kỵ Sĩ Gậy",suit:"Gậy",kw:["Hành Động","Đam Mê","Phiêu Lưu"],meaning:"Tiến về phía trước với tất cả những gì bạn có. Kỵ Sĩ Gậy được thúc đẩy, táo bạo và không sợ hãi. Hãy khai thác đà lửa này vào hành động quyết đoán — chỉ cần nhắm trước khi nhảy."},
+  {name:"Nữ Hoàng Gậy",suit:"Gậy",kw:["Sức Hút","Tự Tin","Quyết Tâm"],meaning:"Hãy sở hữu sức mạnh với vẻ duyên dáng rạng ngời. Nữ Hoàng Gậy lãnh đạo với sự tự tin đam mê và sự độc lập ấm áp, mãnh liệt. Hãy hiện thân sự sáng tạo không sợ hãi — bạn thắp sáng mọi căn phòng bạn bước vào."},
+  {name:"Vua Gậy",suit:"Gậy",kw:["Tầm Nhìn","Lãnh Đạo","Thành Thạo"],meaning:"Lãnh đạo với tầm nhìn táo bạo và truyền cảm hứng. Vua Gậy là nhà thị kiến thiên bẩm — cuốn hút, bậc thầy và đầy sức khích lệ. Hãy bước vào quyền uy của mình và đốt cháy thế giới."},
+  // CUPS
+  {name:"Át Cốc",suit:"Cốc",kw:["Tình Yêu Mới","Từ Bi","Mở Lòng"],meaning:"Trái tim bạn đang mở ra với điều gì đó đẹp đẽ. Át Cốc rót ra những khởi đầu cảm xúc mới — tình yêu, từ bi và kết nối tâm linh. Hãy mở lòng để nhận lấy món quà này với sự kỳ diệu."},
+  {name:"Hai Cốc",suit:"Cốc",kw:["Đối Tác","Kết Nối","Hòa Hợp"],meaning:"Một liên minh tâm hồn đang hình thành. Hai Cốc nói về sự nhận biết lẫn nhau sâu sắc và sự đối tác hòa hợp. Điều gì đó hiếm có và đẹp đẽ đang bén rễ giữa hai người — hãy trân trọng nó."},
+  {name:"Ba Cốc",suit:"Cốc",kw:["Ăn Mừng","Tình Bạn","Cộng Đồng"],meaning:"Ăn mừng với những người bạn yêu. Ba Cốc mang lại sự đoàn tụ vui vẻ và cộng đồng chân thành. Hãy buông bỏ sự cô lập và tận hưởng sự phong phú của kết nối con người thực sự xung quanh bạn."},
+  {name:"Bốn Cốc",suit:"Cốc",kw:["Thờ Ơ","Suy Ngẫm","Đánh Giá Lại"],meaning:"Đừng bỏ lỡ những gì đang được cung cấp. Bốn Cốc nói về sự suy ngẫm nội tâm và sự chán nản nhẹ. Một cơ hội mới đang xuất hiện trước bạn — hãy nhìn lên từ sự suy ngẫm trước khi nó qua đi."},
+  {name:"Năm Cốc",suit:"Cốc",kw:["Đau Buồn","Mất Mát","Hối Tiếc"],meaning:"Hãy thương tiếc những gì đã mất, nhưng nhìn vào những gì còn lại. Năm Cốc yêu cầu bạn thừa nhận mất mát thực sự mà không mất đi tầm nhìn về những chiếc cốc vẫn đứng. Sự chữa lành luôn bắt đầu bằng sự thừa nhận trung thực."},
+  {name:"Sáu Cốc",suit:"Cốc",kw:["Hoài Niệm","Ngây Thơ","Quá Khứ"],meaning:"Quá khứ trở lại với sự ngọt ngào. Sáu Cốc gợi lên sự ấm áp của những ký ức đẹp và sự ngây thơ thời thơ ấu. Một người hoặc tình huống từ quá khứ trở lại — nó có thể mang theo những món quà chữa lành."},
+  {name:"Bảy Cốc",suit:"Cốc",kw:["Lựa Chọn","Tưởng Tượng","Ảo Tưởng"],meaning:"Phân biệt giữa mơ và thực. Bảy Cốc lấp đầy tâm trí bạn với những tầm nhìn và khả năng hấp dẫn. Trí tưởng tượng là món quà, nhưng suy nghĩ ước muốn là cái bẫy — hãy gắn mong muốn vào những gì thực sự là thực."},
+  {name:"Tám Cốc",suit:"Cốc",kw:["Buông Bỏ","Tiến Lên","Tìm Kiếm Nhiều Hơn"],meaning:"Đã đến lúc bước đi. Tám Cốc yêu cầu sự dũng cảm yên lặng để rời bỏ những gì không còn làm bạn thỏa mãn. Trái tim biết — điều gì đó có ý nghĩa hơn đang chờ đợi dọc theo con đường."},
+  {name:"Chín Cốc",suit:"Cốc",kw:["Mãn Nguyện","Ước Nguyện","Thỏa Mãn"],meaning:"Ước nguyện của bạn được ban. Chín Cốc là lá bài ước nguyện — sự thỏa mãn cảm xúc và sự mãn nguyện sâu sắc khi có những gì bạn thực sự mong muốn. Hãy để mình cảm nhận hạnh phúc này đầy đủ và không mặc cảm."},
+  {name:"Mười Cốc",suit:"Cốc",kw:["Phúc Lộc","Gia Đình","Niềm Vui Bền Lâu"],meaning:"Hạnh phúc thực sự là của bạn. Mười Cốc là đỉnh cao của sự thỏa mãn cảm xúc — tình yêu sâu sắc, kết nối hòa hợp và cảm giác vui vẻ và thuộc về bền lâu. Trái tim bạn đã tìm thấy ngôi nhà."},
+  {name:"Tiểu Thư Cốc",suit:"Cốc",kw:["Sáng Tạo","Trực Giác","Sứ Điệp"],meaning:"Hãy để trí tưởng tượng dẫn đường. Tiểu Thư Cốc mang tin nhắn của cảm hứng sáng tạo và sự tò mò tình cảm. Hãy cởi mở với những điều bất ngờ — một thông điệp kỳ diệu có thể đang trên đường đến."},
+  {name:"Kỵ Sĩ Cốc",suit:"Cốc",kw:["Lãng Mạn","Quyến Rũ","Mơ Mộng"],meaning:"Theo đuổi những gì trái tim bạn mong muốn. Kỵ Sĩ Cốc là người lãng mạn, cuốn hút và hướng đến giấc mơ. Hãy để trái tim dẫn dắt các hành động — sự chân thực của cảm xúc là sức mạnh của bạn."},
+  {name:"Nữ Hoàng Cốc",suit:"Cốc",kw:["Từ Bi","Đồng Cảm","Nuôi Dưỡng"],meaning:"Hãy tin vào trái tim nhạy cảm của bạn. Nữ Hoàng Cốc hiện thân trí tuệ cảm xúc sâu sắc và sự đồng cảm chữa lành. Hãy lắng nghe trực giác — sức mạnh nuôi dưỡng của bạn là quý báu và mạnh mẽ."},
+  {name:"Vua Cốc",suit:"Cốc",kw:["Bình Tĩnh Cảm Xúc","Kiểm Soát","Từ Bi"],meaning:"Hãy lãnh đạo bằng sự khôn ngoan cảm xúc. Vua Cốc cân bằng trái tim và tâm trí — tâm hồn ổn định, từ bi và chín chắn cảm xúc. Hãy đưa ra quyết định từ nơi điềm tĩnh bên trong."},
+  // SWORDS
+  {name:"Át Kiếm",suit:"Kiếm",kw:["Sự Rõ Ràng","Sự Thật","Đột Phá"],meaning:"Một làn gió rõ ràng cắt qua sự hỗn loạn. Át Kiếm mang lại sự rõ ràng tinh thần và sự thật — một ý tưởng đột phá hoặc khoảnh khắc hiểu biết sâu sắc mở ra con đường phía trước."},
+  {name:"Hai Kiếm",suit:"Kiếm",kw:["Bế Tắc","Quyết Định Khó Khăn","Trung Lập"],meaning:"Không thể tránh khỏi quyết định mãi mãi. Hai Kiếm nói về sự bế tắc và từ chối đối mặt với thực tế. Hãy bỏ bịt mắt — sự thật, dù khó khăn, sẽ giải phóng bạn khỏi sự tê liệt này."},
+  {name:"Ba Kiếm",suit:"Kiếm",kw:["Đau Lòng","Đau Khổ","Mất Mát"],meaning:"Nỗi đau đòi hỏi sự thừa nhận. Ba Kiếm mang nỗi buồn, phản bội hoặc mất mát tình cảm sâu sắc. Hãy cho phép mình đau, nhưng đừng ở lại trong nỗi đau — sự chữa lành luôn đến sau sự thừa nhận thực sự."},
+  {name:"Bốn Kiếm",suit:"Kiếm",kw:["Nghỉ Ngơi","Phục Hồi","Suy Ngẫm"],meaning:"Cơ thể và tâm trí bạn cần nghỉ ngơi. Bốn Kiếm kêu gọi sự rút lui và phục hồi. Sự tĩnh lặng không phải là lười biếng — đó là sự chuẩn bị khôn ngoan. Hãy nghỉ ngơi để tái tạo năng lượng cho những thách thức sắp tới."},
+  {name:"Năm Kiếm",suit:"Kiếm",kw:["Xung Đột","Thất Bại","Mất Mát"],meaning:"Không phải mọi trận chiến đều đáng chiến đấu. Năm Kiếm cảnh báo về xung đột có tổng bằng không và chiến thắng rỗng tuếch. Hãy xem xét cái giá của việc 'chiến thắng' — đôi khi bước đi là chiến lược khôn ngoan nhất."},
+  {name:"Sáu Kiếm",suit:"Kiếm",kw:["Chuyển Tiếp","Chữa Lành","Di Chuyển Tiếp"],meaning:"Bạn đang rời bỏ những vùng nước sóng gió. Sáu Kiếm mang sự chuyển tiếp và bước đi từ khó khăn. Hành trình có thể không dễ dàng, nhưng nó đang đưa bạn đến một nơi yên bình và chữa lành hơn."},
+  {name:"Bảy Kiếm",suit:"Kiếm",kw:["Lừa Dối","Chiến Lược","Bỏ Trốn"],meaning:"Cẩn thận với sự lừa dối — của người khác và của bản thân. Bảy Kiếm chỉ ra sự xảo quyệt, các góc độ bí mật hoặc hành vi trốn tránh. Hãy tìm kiếm sự trong sáng và đảm bảo các hành động của bạn phù hợp với giá trị."},
+  {name:"Tám Kiếm",suit:"Kiếm",kw:["Bị Trói Buộc","Giới Hạn Tinh Thần","Bị Giam Cầm"],meaning:"Nhà tù nằm trong tâm trí. Tám Kiếm nói về những hạn chế tự áp đặt và suy nghĩ bị giam cầm. Băng bịt mắt đó là những niềm tin của bạn — buông bỏ chúng và bạn sẽ thấy con đường luôn ở đó."},
+  {name:"Chín Kiếm",suit:"Kiếm",kw:["Lo Âu","Ác Mộng","Lo Lắng"],meaning:"Những suy nghĩ ban đêm không phải là thực tế. Chín Kiếm tiết lộ lo lắng, xấu hổ và nỗi sợ hãi tấn công trong bóng tối. Hãy nhẹ nhàng với bản thân — tâm trí phóng đại rủi ro. Hãy tìm kiếm ánh sáng của ngày."},
+  {name:"Mười Kiếm",suit:"Kiếm",kw:["Cú Đánh Cuối","Mất Mát","Kết Thúc"],meaning:"Điều này đã đến giới hạn cuối cùng của nó. Mười Kiếm đánh dấu một kết thúc đau đớn — nhưng đây là chương cuối của giai đoạn khó khăn này. Bình minh đến sau đêm tối nhất. Tái sinh bắt đầu ngay bây giờ."},
+  {name:"Tiểu Thư Kiếm",suit:"Kiếm",kw:["Tò Mò","Khéo Léo","Cảnh Giác"],meaning:"Hãy nhạy bén và tò mò. Tiểu Thư Kiếm thách thức bạn quan sát và giao tiếp với sự rõ ràng. Hãy thận trọng, hãy khéo léo và luôn sẵn sàng học hỏi — thông tin mới đang trên đường đến."},
+  {name:"Kỵ Sĩ Kiếm",suit:"Kiếm",kw:["Tham Vọng","Trực Tiếp","Liều Lĩnh"],meaning:"Tiến về phía trước với trí tuệ sắc bén và quyết tâm. Kỵ Sĩ Kiếm là người hành động nhanh chóng, thẳng thắn và tham vọng. Hãy giữ sức lực đó nhưng đừng để hối hả bỏ qua sự cẩn thận."},
+  {name:"Nữ Hoàng Kiếm",suit:"Kiếm",kw:["Nhận Thức Sắc Bén","Độc Lập","Thẳng Thắn"],meaning:"Hãy nói sự thật của bạn một cách rõ ràng và tự tin. Nữ Hoàng Kiếm lãnh đạo bằng trí tuệ sắc bén, ranh giới rõ ràng và sự giao tiếp thẳng thắn. Sự rõ ràng của cô ấy là lòng từ bi — hãy lấy cảm hứng từ nó."},
+  {name:"Vua Kiếm",suit:"Kiếm",kw:["Quyền Uy Tinh Thần","Công Bằng","Sự Thật"],meaning:"Hãy lãnh đạo bằng sự rõ ràng, đạo đức và lý luận logic. Vua Kiếm hiện thân sức mạnh tinh thần và quyền uy trí tuệ. Hãy đưa ra quyết định với sự công bằng và sự rõ ràng — trí tuệ của bạn là tài sản quý giá nhất."},
+  // PENTACLES
+  {name:"Át Tiền",suit:"Tiền",kw:["Cơ Hội Mới","Thịnh Vượng","Biểu Hiện"],meaning:"Hạt giống của sự thịnh vượng đang được gieo. Át Tiền mang đến cơ hội vật chất, tài chính hoặc sự khởi đầu thực tế. Hãy tiếp nhận nó với sự cẩn thận và chăm chỉ — điều này có tiềm năng phát triển lâu dài."},
+  {name:"Hai Tiền",suit:"Tiền",kw:["Cân Bằng","Linh Hoạt","Điều Phối"],meaning:"Cuộc sống đòi hỏi sự cân bằng linh hoạt. Hai Tiền nói về việc tung hứng nhiều trách nhiệm. Hãy duy trì tính linh hoạt và nhớ rằng không phải mọi thứ đều cần sự chú ý ngay lập tức — hãy ưu tiên một cách khôn ngoan."},
+  {name:"Ba Tiền",suit:"Tiền",kw:["Làm Việc Nhóm","Kỹ Năng","Cộng Tác"],meaning:"Thành tích vĩ đại được xây dựng cùng nhau. Ba Tiền tôn vinh sự cộng tác, kỹ năng nghề nghiệp và nhóm làm việc tốt. Hãy đánh giá cao đóng góp của người khác và để chuyên môn độc đáo của bạn tỏa sáng."},
+  {name:"Bốn Tiền",suit:"Tiền",kw:["Kiểm Soát","Bảo Thủ","Keo Kiệt"],meaning:"Hãy thận trọng với sự keo kiệt. Bốn Tiền cảnh báo về việc ôm khư khư những gì bạn có vì sợ mất mát. Sự an toàn thực sự không đến từ việc giữ chặt — hãy học cách chia sẻ một cách hào phóng."},
+  {name:"Năm Tiền",suit:"Tiền",kw:["Nghèo Khó","Khó Khăn","Trừ Loại"],meaning:"Ngay cả trong khó khăn, sự giúp đỡ đang ở đó. Năm Tiền nói về thiếu thốn vật chất hoặc cảm giác bị loại ra ngoài. Hãy tìm kiếm sự hỗ trợ xung quanh bạn — những cánh cửa ấm áp thường mở hơn chúng ta nghĩ."},
+  {name:"Sáu Tiền",suit:"Tiền",kw:["Hào Phóng","Cho Nhận","Cân Bằng"],meaning:"Hãy cho đi và nhận lại với ân cần. Sáu Tiền nói về sự hào phóng, lòng từ thiện và sự cân bằng của nguồn lực. Hãy chia sẻ sự phong phú của bạn một cách tự do — những gì bạn cho đi sẽ trở lại nhân lên nhiều lần."},
+  {name:"Bảy Tiền",suit:"Tiền",kw:["Đánh Giá","Kiên Nhẫn","Đầu Tư"],meaning:"Hãy đánh giá những gì bạn đã trồng. Bảy Tiền kêu gọi kiểm tra tiến độ và kiên nhẫn. Kết quả sẽ đến — tiếp tục nuôi dưỡng dự án của bạn, đặt câu hỏi những gì thực sự xứng đáng với thời gian và năng lượng của bạn."},
+  {name:"Tám Tiền",suit:"Tiền",kw:["Thành Thạo","Chuyên Cần","Cải Thiện Kỹ Năng"],meaning:"Thành thạo đến từ sự tận tụy. Tám Tiền tôn vinh sự chăm chỉ, cải thiện kỹ năng và tinh tế nghề thủ công. Hãy tiếp tục rèn luyện — sự lặp lại chú tâm của bạn đang xây dựng thứ gì đó thực sự xuất sắc."},
+  {name:"Chín Tiền",suit:"Tiền",kw:["Sung Túc","Tự Chủ","Thành Công"],meaning:"Bạn đã đạt được điều này qua nỗ lực của bản thân. Chín Tiền tôn vinh sự sung túc vật chất và tinh thần đến từ kỷ luật và kiên nhẫn. Hãy tận hưởng thành quả của bạn — bạn xứng đáng với sự thịnh vượng này."},
+  {name:"Mười Tiền",suit:"Tiền",kw:["Di Sản","Sự Sung Túc","Truyền Thống Gia Đình"],meaning:"Sự thịnh vượng kéo dài qua các thế hệ. Mười Tiền đại diện cho di sản lâu dài, sự sung túc vật chất và gia đình. Những nền tảng bạn đang xây dựng hôm nay sẽ hỗ trợ không chỉ bạn mà cả những người thân yêu."},
+  {name:"Tiểu Thư Tiền",suit:"Tiền",kw:["Học Hỏi","Tham Vọng","Kế Hoạch Thực Tế"],meaning:"Hãy tiếp cận cuộc sống với sự tập trung chú ý. Tiểu Thư Tiền đang học cách biểu hiện những ước mơ thành thực tế. Hãy chăm học, đặt ra mục tiêu rõ ràng và tin rằng nỗ lực của bạn sẽ mang lại kết quả hữu hình."},
+  {name:"Kỵ Sĩ Tiền",suit:"Tiền",kw:["Siêng Năng","Đáng Tin Cậy","Phương Pháp"],meaning:"Sự kiên định là siêu năng lực của bạn. Kỵ Sĩ Tiền là người đáng tin cậy, chăm chỉ và kiên nhẫn — người luôn đến đích dù chậm và ổn định. Hãy tiếp tục bước tiến vững chắc của bạn."},
+  {name:"Nữ Hoàng Tiền",suit:"Tiền",kw:["Nuôi Dưỡng","Thực Tiễn","Sung Túc"],meaning:"Hãy tạo ra sự ấm áp và sung túc xung quanh bạn. Nữ Hoàng Tiền là người nuôi dưỡng thực tế, quản lý nguồn lực với ân cần và sự chăm chút tỉ mỉ. Sự chăm sóc chu đáo của cô ấy tạo ra không gian an toàn cho mọi người phát triển."},
+  {name:"Vua Tiền",suit:"Tiền",kw:["Thịnh Vượng","Lãnh Đạo","Bảo Mật"],meaning:"Hãy lãnh đạo với sự hào phóng và thực tiễn. Vua Tiền hiện thân sự thành công vật chất, sự ổn định và khả năng cung cấp hào phóng. Chia sẻ sự sung túc của bạn — di sản thực sự của bạn là sự hào phóng bạn thể hiện."},
+];
+
+// ─── TRANSLATIONS ─────────────────────────────────────────────────────────────
+const TRANSLATIONS = {
+  en: {
+    title:'The Mystic Tarot',
+    subtitle:'Three Card Spread \u00a0·\u00a0 Past \u00a0·\u00a0 Present \u00a0·\u00a0 Future',
+    qLabel:'Contemplate your question',
+    placeholder:'What guidance do you seek?',
+    spreadLbl:'✦ \u00a0 Three Card Spread \u00a0 ✦',
+    instrInit:'Shuffle the deck to begin your reading…',
+    instrClick:'Click each card to reveal your reading…',
+    instrReveal1:'Reveal the remaining cards…',
+    instrReveal2:'One final card remains…',
+    shuffleTxt:'✦ \u00a0 Shuffle & Draw',
+    shufflingTxt:'✦ \u00a0 Shuffling…',
+    resetTxt:'↺ \u00a0 New Reading',
+    readingTitle:'✦ \u00a0 Your Reading \u00a0 ✦',
+    positions:['Past','Present','Future'],
+    langBtn:'🌐 Tiếng Việt',
+  },
+  vi: {
+    title:'Tarot Huyền Bí',
+    subtitle:'Trải Bài Ba Lá \u00a0·\u00a0 Quá Khứ \u00a0·\u00a0 Hiện Tại \u00a0·\u00a0 Tương Lai',
+    qLabel:'Suy ngẫm câu hỏi của bạn',
+    placeholder:'Bạn đang tìm kiếm điều gì?',
+    spreadLbl:'✦ \u00a0 Trải Bài Ba Lá \u00a0 ✦',
+    instrInit:'Xáo bài để bắt đầu bài đọc của bạn…',
+    instrClick:'Nhấn vào từng lá bài để xem bài đọc…',
+    instrReveal1:'Lật các lá bài còn lại…',
+    instrReveal2:'Còn một lá bài cuối cùng…',
+    shuffleTxt:'✦ \u00a0 Xáo & Rút Bài',
+    shufflingTxt:'✦ \u00a0 Đang xáo…',
+    resetTxt:'↺ \u00a0 Bài Đọc Mới',
+    readingTitle:'✦ \u00a0 Bài Đọc Của Bạn \u00a0 ✦',
+    positions:['Quá Khứ','Hiện Tại','Tương Lai'],
+    langBtn:'🌐 English',
+  }
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentLang = 'en';
+let T = TRANSLATIONS.en;
+const POSITIONS = ["Past","Present","Future"];
+let drawnCards = [];
+let flippedCount = 0;
+
+// ─── LANGUAGE ─────────────────────────────────────────────────────────────────
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'vi' : 'en';
+  T = TRANSLATIONS[currentLang];
+  applyLang();
+}
+
+function applyLang() {
+  document.getElementById('langBtn').textContent = T.langBtn;
+  document.querySelector('h1').textContent = T.title;
+  document.querySelector('.subtitle').textContent = T.subtitle;
+  document.querySelector('.q-label').textContent = T.qLabel;
+  document.getElementById('qInput').placeholder = T.placeholder;
+  document.querySelector('.spread-lbl').textContent = T.spreadLbl;
+  document.getElementById('readingTitle').textContent = T.readingTitle;
+  const sb = document.getElementById('shuffleBtn');
+  if (sb.style.display !== 'none' && !sb.disabled) sb.textContent = T.shuffleTxt;
+  const rb = document.getElementById('resetBtn');
+  if (rb.style.display !== 'none') rb.textContent = T.resetTxt;
+  const instr = document.getElementById('instr');
+  if (instr.textContent) instr.textContent = T.instrInit;
+  if (drawnCards.length === 0) {
+    buildSlots();
+  } else {
+    T.positions.forEach((pos, i) => {
+      const slot = document.getElementById(`slot${i}`);
+      if (slot) slot.querySelector('.pos-label').textContent = pos;
+    });
+    drawnCards.forEach((card, i) => {
+      const cw = document.getElementById(`cw${i}`);
+      if (cw && cw.classList.contains('flipped')) {
+        renderCardFront(document.getElementById(`cf${i}`), card);
+      }
+    });
+    if (document.getElementById('readingPanel').classList.contains('visible')) {
+      showReading();
+      generateConclusion();
+    }
+  }
+}
+
+function renderCardFront(cf, card) {
+  const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
+  const suitDisplay = card.arcana === 'major' ? card.num : d.suit;
+  cf.style.background = `linear-gradient(155deg,${card.col[0]} 0%,${card.col[1]} 60%,${card.col[0]} 100%)`;
+  cf.innerHTML = `
+    <div class="cf-inner">
+      <div class="cf-orn">✦ · ✦</div>
+      <div class="cf-num">${suitDisplay}</div>
+      <div class="cf-sym">${card.sym}</div>
+      <div class="cf-name">${d.name}</div>
+      <div class="cf-kw">${d.kw.join(' · ')}</div>
+      <div class="cf-orn">✦ · ✦</div>
+    </div>`;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  buildSlots();
+});
+
+function buildSlots() {
+  const row = document.getElementById('cardsRow');
+  row.innerHTML = T.positions.map((pos, i) => `
+    <div class="card-slot" id="slot${i}">
+      <div class="pos-label">${pos}</div>
+      <div class="card-wrap" id="cw${i}" onclick="flipCard(${i})" style="display:none">
+        <div class="card-inner">
+          <div class="card-face card-back">
+            <div class="back-design"><span class="back-sym">𓂀</span></div>
+          </div>
+          <div class="card-face card-front" id="cf${i}"></div>
+        </div>
+      </div>
+      <div class="placeholder" id="ph${i}"><span class="ph-sym">✦</span></div>
+    </div>
+  `).join('');
+}
+
+// ─── SHUFFLE & DEAL ───────────────────────────────────────────────────────────
+function shuffleAndDeal() {
+  const btn = document.getElementById('shuffleBtn');
+  btn.disabled = true;
+  btn.textContent = T.shufflingTxt;
+  flippedCount = 0;
+  document.getElementById('readingPanel').classList.remove('visible');
+  document.getElementById('resetBtn').style.display = 'none';
+
+  // Fisher-Yates shuffle
+  const deck = [...DECK];
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  drawnCards = deck.slice(0, 3);
+
+  // Populate fronts
+  drawnCards.forEach((card, i) => {
+    renderCardFront(document.getElementById(`cf${i}`), card);
+  });
+
+  // Reveal cards with stagger
+  setTimeout(() => {
+    POSITIONS.forEach((_, i) => {
+      setTimeout(() => {
+        const ph = document.getElementById(`ph${i}`);
+        const cw = document.getElementById(`cw${i}`);
+        ph.style.display = 'none';
+        cw.classList.remove('flipped');
+        cw.style.cssText = 'display:block;opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          cw.style.opacity = '1';
+          cw.style.transform = 'translateY(0)';
+        }));
+      }, i * 220);
+    });
+    setTimeout(() => {
+      btn.style.display = 'none';
+      document.getElementById('resetBtn').style.display = 'inline-block';
+      document.getElementById('instr').textContent = T.instrClick;
+    }, 900);
+  }, 500);
+}
+
+// ─── FLIP ─────────────────────────────────────────────────────────────────────
+function flipCard(idx) {
+  const cw = document.getElementById(`cw${idx}`);
+  if (cw.classList.contains('flipped')) return;
+  cw.classList.add('flipped');
+  spawnSparkles(cw);
+  flippedCount++;
+  const instr = document.getElementById('instr');
+  if (flippedCount === 1) instr.textContent = T.instrReveal1;
+  else if (flippedCount === 2) instr.textContent = T.instrReveal2;
+  else { instr.textContent = ''; setTimeout(showReading, 750); }
+}
+
+function spawnSparkles(el) {
+  const glyphs = ['✦','✧','⭐','·','✨'];
+  el.style.position = 'relative';
+  for (let i = 0; i < 9; i++) {
+    const sp = document.createElement('span');
+    sp.className = 'sparkle';
+    sp.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+    sp.style.cssText = `color:${Math.random()>.5?'#c9a84c':'#f0d080'};font-size:${.7+Math.random()*.6}rem;left:${Math.random()*155}px;top:${Math.random()*272}px;animation-delay:${(Math.random()*.35).toFixed(2)}s;`;
+    el.appendChild(sp);
+    setTimeout(() => sp.remove(), 1300);
+  }
+}
+
+// ─── SHOW READING ─────────────────────────────────────────────────────────────
+function showReading() {
+  const panel = document.getElementById('readingPanel');
+  document.getElementById('cardReadings').innerHTML = drawnCards.map((card, i) => {
+    const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
+    return `
+    <div class="card-reading" style="animation-delay:${i*.18}s">
+      <div class="r-pos">${T.positions[i]}</div>
+      <div class="r-sym">${card.sym}</div>
+      <div class="r-name">${d.name}</div>
+      <div class="r-kw">${d.kw.join(' · ')}</div>
+      <div class="r-meaning">${d.meaning}</div>
+    </div>`;
+  }).join('');
+  panel.classList.add('visible');
+
+  // Generate conclusion
+  generateConclusion();
+
+  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 250);
+}
+
+function generateConclusion() {
+  const area = document.getElementById('conclusionArea');
+  const box = document.getElementById('conclusionBox');
+  const isVi = currentLang === 'vi';
+
+  const past = currentLang === 'vi' ? DECK_VI[drawnCards[0].id] : drawnCards[0];
+  const present = currentLang === 'vi' ? DECK_VI[drawnCards[1].id] : drawnCards[1];
+  const future = currentLang === 'vi' ? DECK_VI[drawnCards[2].id] : drawnCards[2];
+
+  // Determine overall energy (positive/mixed/challenging)
+  const challengeCards = ['Death','The Tower','The Devil','Five of Cups','Three of Swords','Ten of Swords','Nine of Swords','Five of Swords','Eight of Swords','Five of Pentacles'];
+  const positiveCards = ['The Sun','The Star','The World','Ace of Cups','Ten of Cups','Nine of Cups','Six of Wands','The Empress','Wheel of Fortune','Ace of Pentacles','Nine of Pentacles'];
+
+  let positiveCount = 0, challengeCount = 0;
+  drawnCards.forEach(c => {
+    if (positiveCards.includes(c.name)) positiveCount++;
+    if (challengeCards.includes(c.name)) challengeCount++;
+  });
+
+  let overallTone, synthesis, adviceItems;
+
+  if (positiveCount > challengeCount) {
+    overallTone = isVi ? 'Năng lượng tổng thể: Tích cực' : 'Overall Energy: Positive';
+    synthesis = isVi
+      ? `Bộ bài của bạn mang một thông điệp đầy hy vọng. Từ quá khứ với <strong>${past.name}</strong>, qua hiện tại với <strong>${present.name}</strong>, đến tương lai với <strong>${future.name}</strong> — có một dòng chảy tích cực đang dẫn dắt bạn. Vũ trụ đang ủng hộ hành trình của bạn.`
+      : `Your spread carries a hopeful message. From the past with <strong>${past.name}</strong>, through the present with <strong>${present.name}</strong>, to the future with <strong>${future.name}</strong> — there is a positive current guiding you. The universe supports your journey.`;
+    adviceItems = isVi
+      ? ['Tin tưởng vào dòng chảy thuận lợi và tiếp tục tiến về phía trước','Tận dụng năng lượng tích cực để bắt đầu những dự án mới','Chia sẻ may mắn và ánh sáng của bạn với những người xung quanh']
+      : ['Trust the favorable current and keep moving forward','Harness this positive energy to start new ventures','Share your good fortune and light with those around you'];
+  } else if (challengeCount > positiveCount) {
+    overallTone = isVi ? 'Năng lượng tổng thể: Thử thách' : 'Overall Energy: Challenging';
+    synthesis = isVi
+      ? `Bộ bài cho thấy một giai đoạn thử thách. <strong>${past.name}</strong> trong quá khứ, <strong>${present.name}</strong> ở hiện tại, và <strong>${future.name}</strong> trong tương lai — tất cả đều nhắc nhở rằng khó khăn là bước đệm cho sự trưởng thành. Mỗi thử thách đều mang theo bài học quý giá.`
+      : `Your spread reveals a period of challenge. <strong>${past.name}</strong> in the past, <strong>${present.name}</strong> in the present, and <strong>${future.name}</strong> in the future — all remind you that difficulty is a stepping stone to growth. Every challenge carries a precious lesson.`;
+    adviceItems = isVi
+      ? ['Kiên nhẫn và từ bi với bản thân trong giai đoạn này','Tìm kiếm sự hỗ trợ từ những người bạn tin tưởng','Nhớ rằng sau mỗi cơn bão, bầu trời lại trong xanh hơn']
+      : ['Be patient and compassionate with yourself during this period','Seek support from those you trust','Remember that after every storm, the sky becomes clearer'];
+  } else {
+    overallTone = isVi ? 'Năng lượng tổng thể: Cân bằng' : 'Overall Energy: Balanced';
+    synthesis = isVi
+      ? `Bộ bài của bạn phản ánh sự cân bằng giữa ánh sáng và bóng tối. <strong>${past.name}</strong> từ quá khứ, <strong>${present.name}</strong> ở hiện tại, và <strong>${future.name}</strong> cho tương lai — cho thấy cuộc sống đang ở trạng thái chuyển tiếp. Đây là thời điểm để suy ngẫm và chọn lựa con đường đúng đắn.`
+      : `Your spread reflects a balance between light and shadow. <strong>${past.name}</strong> from the past, <strong>${present.name}</strong> in the present, and <strong>${future.name}</strong> for the future — suggest life is in a state of transition. This is a time for reflection and choosing the right path.`;
+    adviceItems = isVi
+      ? ['Dành thời gian suy ngẫm trước khi đưa ra quyết định quan trọng','Cân bằng giữa hành động và nghỉ ngơi','Lắng nghe trực giác — nó sẽ dẫn đường đúng lúc']
+      : ['Take time to reflect before making important decisions','Balance action with rest and contemplation','Listen to your intuition — it will guide you at the right moment'];
+  }
+
+  const conclusionTitle = isVi ? '☽ Kết Luận Tổng Quan ☽' : '☽ Overall Conclusion ☽';
+  const adviceTitle = isVi ? 'Lời Khuyên Cho Bạn' : 'Guidance for You';
+
+  box.innerHTML = `
+    <div class="conclusion-title">${conclusionTitle}</div>
+    <p style="font-size:.78rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;font-family:'Cinzel',serif;">${overallTone}</p>
+    <p class="conclusion-text">${synthesis}</p>
+    <div class="conclusion-advice">
+      <h4>${adviceTitle}</h4>
+      <ul>${adviceItems.map(a => `<li>${a}</li>`).join('')}</ul>
+    </div>
+  `;
+  area.style.display = 'block';
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+function resetReading() {
+  POSITIONS.forEach((_, i) => {
+    const cw = document.getElementById(`cw${i}`);
+    cw.classList.remove('flipped');
+    cw.style.cssText = 'display:none';
+    const ph = document.getElementById(`ph${i}`);
+    ph.style.display = 'flex';
+  });
+  document.getElementById('readingPanel').classList.remove('visible');
+  document.getElementById('conclusionArea').style.display = 'none';
+  const sb = document.getElementById('shuffleBtn');
+  sb.style.display = 'inline-block';
+  sb.disabled = false;
+  sb.textContent = T.shuffleTxt;
+  document.getElementById('resetBtn').style.display = 'none';
+  document.getElementById('instr').textContent = T.instrInit;
+  flippedCount = 0;
+  drawnCards = [];
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── CUSTOM CURSOR ─────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; cursor.style.left = mx+'px'; cursor.style.top = my+'px'; });
+(function movRing(){ rx += (mx-rx)*.15; ry += (my-ry)*.15; ring.style.left = rx+'px'; ring.style.top = ry+'px'; requestAnimationFrame(movRing); })();
+
+// ─── CANVAS STARFIELD ──────────────────────────────────────────────────────
+(function(){
+  const c = document.getElementById('cosmos'), ctx = c.getContext('2d');
+  let W, H, stars = [], constellations = [];
+  function resize(){ W = c.width = innerWidth; H = c.height = innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+  for(let i=0;i<280;i++) stars.push({x:Math.random()*2000-500,y:Math.random()*2000-500,r:Math.random()*1.2+.3,a:Math.random()*6.28,s:Math.random()*.0006+.0002});
+  for(let i=0;i<12;i++){const pts=[];for(let j=0;j<Math.floor(Math.random()*4+3);j++) pts.push(Math.floor(Math.random()*stars.length));constellations.push(pts);}
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const t=performance.now();
+    stars.forEach(s=>{
+      const flicker=.5+.5*Math.sin(s.a+t*s.s);
+      ctx.beginPath();ctx.arc(((s.x%W)+W)%W,((s.y%H)+H)%H,s.r,0,6.28);
+      ctx.fillStyle=`rgba(232,213,163,${(.15+flicker*.55).toFixed(2)})`;ctx.fill();
+    });
+    ctx.strokeStyle='rgba(201,168,76,.04)';ctx.lineWidth=.5;
+    constellations.forEach(pts=>{ctx.beginPath();pts.forEach((pi,j)=>{const s=stars[pi];const x=((s.x%W)+W)%W,y=((s.y%H)+H)%H;j===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.stroke();});
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+<script>
+  document.getElementById('hamburger').addEventListener('click', function(){
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+</script>
+</body>
+</html>
