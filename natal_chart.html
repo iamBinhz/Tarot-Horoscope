@@ -287,6 +287,34 @@ body.lang-vi h1 {
         <label for="bdate" data-en="Birth Date" data-vi="Ngày Sinh">Ngày Sinh (Birth Date)</label>
         <input type="date" id="bdate" required>
       </div>
+      <div class="form-group full" id="lunarToggleGroup" style="margin-top:-.5rem;">
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);cursor:pointer;">
+          <input type="checkbox" id="manualLunar" onchange="toggleManualLunar()"> <span data-en="I know the lunar date" data-vi="Tôi biết ngày âm lịch">Tôi biết ngày âm lịch (I know the lunar date)</span>
+        </label>
+      </div>
+      <div id="lunarFields" style="display:none;grid-column:1/-1;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem;">
+          <div class="form-group">
+            <label for="lunarMonth" data-en="Lunar Month" data-vi="Tháng Âm">Tháng Âm</label>
+            <select id="lunarMonth">
+              <option value="">—</option>
+              <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+              <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+              <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+              <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lunarDay" data-en="Lunar Day" data-vi="Ngày Âm">Ngày Âm</label>
+            <input type="number" id="lunarDay" min="1" max="30" placeholder="1-30">
+          </div>
+          <div class="form-group">
+            <label for="lunarYear" data-en="Lunar Year" data-vi="Năm Âm">Năm Âm</label>
+            <input type="number" id="lunarYear" min="1900" max="2100" placeholder="1990">
+          </div>
+        </div>
+      </div>
+      <div id="lunarDisplay" style="display:none;grid-column:1/-1;font-size:.85rem;color:var(--gold);font-style:italic;text-align:center;padding:.3rem 0;"></div>
       <div class="form-group">
         <label for="bhour" data-en="Birth Hour" data-vi="Giờ Sinh">Giờ Sinh (Birth Hour)</label>
         <select id="bhour" required>
@@ -347,6 +375,12 @@ body.lang-vi h1 {
     <div class="divider"><span class="divider-line"></span><span class="divider-sym">☽</span><span class="divider-line"></span></div>
     <p class="interp-title" data-en="Chart Interpretations" data-vi="Luận Giải Tổng Quan">Luận Giải Tổng Quan</p>
     <div id="interp-list"></div>
+  </div>
+
+  <div id="tongluan-area" style="display:none;width:100%;max-width:850px;margin-bottom:2.5rem;animation:fadeUp .8s ease .3s both;">
+    <div class="divider"><span class="divider-line"></span><span class="divider-sym">✦</span><span class="divider-line"></span></div>
+    <p class="interp-title" data-en="Overall Synthesis" data-vi="Tổng Luận">Tổng Luận (Overall Synthesis)</p>
+    <div id="tongluan-content" style="background:rgba(225,218,200,.5);border:1px solid rgba(107,82,16,.18);border-radius:6px;padding:1.5rem 1.2rem;line-height:1.85;color:var(--text);font-size:.95rem;"></div>
   </div>
 
   <div class="divider"><span class="divider-line"></span><span class="divider-sym">✧</span><span class="divider-line"></span></div>
@@ -681,20 +715,25 @@ const STAR_MEANINGS_VI={
 
 /* ── Compute Mệnh cung position based on birth month & hour ── */
 function computeMenhCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 + hourIdx) % 12;
+  // Start Dần(2), forward by month, BACKWARD by hour
+  return (2 + lunarMonth - 1 - hourIdx + 24) % 12;
 }
 
 function computeThanCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 + (12 - hourIdx)) % 12;
+  // Start Dần(2), forward by month, FORWARD by hour
+  return (2 + lunarMonth - 1 + hourIdx) % 12;
 }
 
-/* Get star brightness for a branch (deterministic from star + branch combo) */
+/* Get star brightness using lookup table from tuvi-data.js, fallback to hash */
 function getStarBrightness(starName, branchIdx) {
+  if (typeof STAR_BRIGHTNESS_TABLE !== 'undefined' && STAR_BRIGHTNESS_TABLE[starName]) {
+    const val = STAR_BRIGHTNESS_TABLE[starName][branchIdx];
+    if (val) return val.charAt(0); // First char: M/V/Đ/B/H
+  }
   let h = 0;
   const str = starName + branchIdx;
   for (let i = 0; i < str.length; i++) { h = ((h << 5) - h) + str.charCodeAt(i); h |= 0; }
-  const idx = Math.abs(h) % 5;
-  return BRIGHTNESS[idx];
+  return BRIGHTNESS[Math.abs(h) % 5];
 }
 
 /* Get star element class */
@@ -703,47 +742,106 @@ function getStarElClass(starName) {
   return data ? STAR_EL_CLASS[data.el] : 's-kim';
 }
 
-/* ── Generate Chart ── */
-function generateChart(name, dateStr, hour, gender) {
-  const seed = seedHash(name + dateStr + hour + gender);
-  const rng = mulberry32(seed);
+/* ── Toggle manual lunar input ── */
+function toggleManualLunar() {
+  const checked = document.getElementById('manualLunar').checked;
+  document.getElementById('lunarFields').style.display = checked ? 'block' : 'none';
+}
 
+/* ── Live lunar preview when Gregorian date changes ── */
+function updateLunarPreview() {
+  const dateStr = document.getElementById('bdate').value;
+  const display = document.getElementById('lunarDisplay');
+  if (!dateStr || document.getElementById('manualLunar').checked) {
+    display.style.display = 'none';
+    return;
+  }
+  if (typeof gregorianToLunar === 'undefined') { display.style.display = 'none'; return; }
   const d = new Date(dateStr);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const day = d.getDate();
+  const lunar = gregorianToLunar(d.getFullYear(), d.getMonth() + 1, d.getDate());
+  if (lunar) {
+    display.textContent = formatLunarDate(lunar, currentLang);
+    display.style.display = 'block';
+  } else {
+    display.style.display = 'none';
+  }
+}
 
-  const canIdx = (year - 4) % 10;
-  const chiIdx = (year - 4) % 12;
+/* ── Helper: find palace index by branch ── */
+function palaceIdxByBranch(palaceData, branchIdx) {
+  return palaceData.findIndex(p => p.branchIdx === branchIdx);
+}
+
+/* ── Generate Chart (Deterministic Algorithm) ── */
+function generateChart(name, dateStr, hour, gender) {
+  const d = new Date(dateStr);
+  const gYear = d.getFullYear();
+  const gMonth = d.getMonth() + 1;
+  const gDay = d.getDate();
+
+  /* ── Step 1: Lunar date ── */
+  let lunarYear, lunarMonth, lunarDay, canIdx, chiIdx;
+  const manualLunar = document.getElementById('manualLunar') && document.getElementById('manualLunar').checked;
+
+  if (manualLunar) {
+    lunarYear = parseInt(document.getElementById('lunarYear').value) || gYear;
+    lunarMonth = parseInt(document.getElementById('lunarMonth').value) || 1;
+    lunarDay = parseInt(document.getElementById('lunarDay').value) || 1;
+    canIdx = ((lunarYear - 4) % 10 + 10) % 10;
+    chiIdx = ((lunarYear - 4) % 12 + 12) % 12;
+  } else if (typeof gregorianToLunar !== 'undefined') {
+    const lunar = gregorianToLunar(gYear, gMonth, gDay);
+    if (lunar) {
+      lunarYear = lunar.lunarYear;
+      lunarMonth = lunar.lunarMonth;
+      lunarDay = lunar.lunarDay;
+      canIdx = lunar.canIdx;
+      chiIdx = lunar.chiIdx;
+    } else {
+      // Fallback for out of range
+      lunarYear = gYear; lunarMonth = gMonth; lunarDay = gDay;
+      canIdx = ((gYear - 4) % 10 + 10) % 10;
+      chiIdx = ((gYear - 4) % 12 + 12) % 12;
+    }
+  } else {
+    // No lunar-data.js — basic fallback
+    lunarYear = gYear; lunarMonth = gMonth; lunarDay = gDay;
+    canIdx = ((gYear - 4) % 10 + 10) % 10;
+    chiIdx = ((gYear - 4) % 12 + 12) % 12;
+  }
+
   const thienCan = THIEN_CAN[canIdx];
   const diaChi = BRANCHES[chiIdx].vi;
 
-  /* Nạp Âm */
-  const napAmIdx = (year - 4) % 60;
+  /* ── Step 2: Nạp Âm & Cục ── */
+  const napAmIdx = ((lunarYear - 4) % 60 + 60) % 60;
   const napAm = NAP_AM_TABLE[napAmIdx] || 'Hải Trung Kim';
   const menhHanh = getNapAmHanh(napAm);
-  const cuc = CUC_MAP[menhHanh];
 
-  /* Âm Dương */
+  // Cục derivation: use CUC_VALUES from tuvi-data.js if available
+  const cuc = CUC_MAP[menhHanh];
+  const cucValue = (typeof CUC_VALUES !== 'undefined') ? CUC_VALUES[menhHanh] : ({Kim:4,Mộc:3,Thủy:2,Hỏa:6,Thổ:5})[menhHanh];
+
   const amDuong = canIdx % 2 === 0 ? 'Dương' : 'Âm';
 
-  /* Mệnh cung position */
-  const menhPos = computeMenhCung(month, hour);
-  const thanPos = computeThanCung(month, hour);
+  /* ── Step 3: Mệnh & Thân positions ── */
+  const menhPos = computeMenhCung(lunarMonth, hour);
+  const thanPos = computeThanCung(lunarMonth, hour);
 
-  /* Place 12 palaces starting from Mệnh position going counterclockwise */
+  /* ── Step 4: Build palace grid ── */
   const palaceData = [];
   for (let i = 0; i < 12; i++) {
     const branchIdx = (menhPos + 12 - i) % 12;
     const branch = BRANCHES[branchIdx];
     const palace = PALACES[i];
-    const el = ELEMENTS[Math.floor(rng() * 5)];
+    // Palace element from branch
+    const branchEl = (typeof BRANCH_ELEMENT !== 'undefined') ? BRANCH_ELEMENT[branchIdx] : ELEMENTS[branchIdx % 5];
     palaceData.push({
       ...palace,
       palaceIdx: i,
       branchIdx: branchIdx,
       branch: branch,
-      element: el,
+      element: branchEl,
       mainStars: [],
       auxStars: [],
       trangSinh: null,
@@ -753,69 +851,137 @@ function generateChart(name, dateStr, hour, gender) {
     });
   }
 
-  /* Distribute 14 main stars */
-  const mainShuffled = [...MAIN_STARS];
-  for (let i = mainShuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [mainShuffled[i], mainShuffled[j]] = [mainShuffled[j], mainShuffled[i]];
+  /* ── Step 5: Place Tử Vi from lookup table ── */
+  let tuViBranch;
+  if (typeof TU_VI_POS !== 'undefined' && TU_VI_POS[cucValue]) {
+    tuViBranch = TU_VI_POS[cucValue][lunarDay] != null ? TU_VI_POS[cucValue][lunarDay] : (lunarDay - 1) % 12;
+  } else {
+    tuViBranch = (lunarDay - 1) % 12;
   }
 
-  const tuViPos = (day - 1) % 12;
-  mainShuffled.splice(mainShuffled.indexOf('Tử Vi'), 1);
-  palaceData[tuViPos].mainStars.push('Tử Vi');
-
-  const thienPhuPos = (12 - tuViPos) % 12;
-  if (mainShuffled.includes('Thiên Phủ')) {
-    mainShuffled.splice(mainShuffled.indexOf('Thiên Phủ'), 1);
-    palaceData[thienPhuPos].mainStars.push('Thiên Phủ');
+  /* ── Step 6: Derive all 14 main stars from Tử Vi ── */
+  let mainPositions;
+  if (typeof deriveMainStarPositions !== 'undefined') {
+    mainPositions = deriveMainStarPositions(tuViBranch);
+  } else {
+    // Fallback: simple distribution from Tử Vi
+    mainPositions = {};
+    MAIN_STARS.forEach((s, i) => {
+      mainPositions[s] = (tuViBranch + i) % 12;
+    });
   }
 
-  let remaining = [...mainShuffled];
-  let pIdx = 0;
-  while (remaining.length > 0) {
-    const target = (tuViPos + 1 + pIdx) % 12;
-    palaceData[target].mainStars.push(remaining.shift());
-    pIdx++;
-    if (pIdx >= 12) pIdx = 0;
+  // Place main stars into palace data
+  for (const [starName, branchIdx] of Object.entries(mainPositions)) {
+    const pIdx = palaceData.findIndex(p => p.branchIdx === branchIdx);
+    if (pIdx >= 0) palaceData[pIdx].mainStars.push(starName);
   }
 
-  /* Distribute auxiliary stars (more stars per palace as in reference) */
-  const auxShuffled = [...ALL_AUX];
-  for (let i = auxShuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [auxShuffled[i], auxShuffled[j]] = [auxShuffled[j], auxShuffled[i]];
+  /* ── Step 7: Place auxiliary stars deterministically ── */
+  if (typeof AUX_BY_HOUR !== 'undefined') {
+    // Stars placed by birth hour
+    for (const [star, positions] of Object.entries(AUX_BY_HOUR)) {
+      const br = positions[hour];
+      if (br != null) {
+        const pIdx = palaceData.findIndex(p => p.branchIdx === br);
+        if (pIdx >= 0) palaceData[pIdx].auxStars.push(star);
+      }
+    }
   }
-  auxShuffled.forEach((s, i) => { palaceData[i % 12].auxStars.push(s); });
-
-  /* Tràng Sinh distribution */
-  const trangSinhStart = Math.floor(rng() * 12);
-  TRANG_SINH.forEach((ts, i) => {
-    palaceData[(trangSinhStart + i) % 12].trangSinh = ts;
-  });
-
-  /* Assign Tứ Hóa */
-  const allMainInPalaces = [];
-  palaceData.forEach((p, pi) => { p.mainStars.forEach(s => { allMainInPalaces.push({ star: s, palace: pi }); }); });
-  const hoaTargets = [];
-  while (hoaTargets.length < 4 && allMainInPalaces.length > 0) {
-    const idx = Math.floor(rng() * allMainInPalaces.length);
-    hoaTargets.push(allMainInPalaces.splice(idx, 1)[0]);
+  if (typeof AUX_BY_MONTH !== 'undefined') {
+    for (const [star, positions] of Object.entries(AUX_BY_MONTH)) {
+      const br = positions[lunarMonth - 1];
+      if (br != null) {
+        const pIdx = palaceData.findIndex(p => p.branchIdx === br);
+        if (pIdx >= 0) palaceData[pIdx].auxStars.push(star);
+      }
+    }
   }
-  hoaTargets.forEach((t, i) => {
-    palaceData[t.palace].hoa.push({ star: t.star, type: HOA_TYPES[i] });
-  });
+  if (typeof AUX_BY_CAN !== 'undefined') {
+    for (const [star, positions] of Object.entries(AUX_BY_CAN)) {
+      const br = positions[canIdx];
+      if (br != null) {
+        const pIdx = palaceData.findIndex(p => p.branchIdx === br);
+        if (pIdx >= 0) palaceData[pIdx].auxStars.push(star);
+      }
+    }
+  }
+  if (typeof AUX_BY_CHI !== 'undefined') {
+    for (const [star, positions] of Object.entries(AUX_BY_CHI)) {
+      const br = positions[chiIdx];
+      if (br != null) {
+        const pIdx = palaceData.findIndex(p => p.branchIdx === br);
+        if (pIdx >= 0) palaceData[pIdx].auxStars.push(star);
+      }
+    }
+  }
+  // Hỏa Tinh & Linh Tinh
+  if (typeof getHoaTinhPos !== 'undefined') {
+    const htBr = getHoaTinhPos(chiIdx, hour);
+    const pIdx = palaceData.findIndex(p => p.branchIdx === htBr);
+    if (pIdx >= 0) palaceData[pIdx].auxStars.push('Hỏa Tinh');
+  }
+  if (typeof getLinhTinhPos !== 'undefined') {
+    const ltBr = getLinhTinhPos(chiIdx, hour);
+    const pIdx = palaceData.findIndex(p => p.branchIdx === ltBr);
+    if (pIdx >= 0) palaceData[pIdx].auxStars.push('Linh Tinh');
+  }
 
-  /* Tuần & Triệt */
-  const tuanPos1 = (canIdx * 2 + 10) % 12;
-  const tuanPos2 = (tuanPos1 + 1) % 12;
-  const trietPos1 = (canIdx * 2 + 2) % 12;
+  /* ── Step 8: Tràng Sinh cycle ── */
+  if (typeof getTrangSinhCycle !== 'undefined') {
+    const tsCycle = getTrangSinhCycle(menhHanh, canIdx, gender);
+    tsCycle.forEach((item, i) => {
+      const pIdx = palaceData.findIndex(p => p.branchIdx === item.branch);
+      if (pIdx >= 0) palaceData[pIdx].trangSinh = item.phase;
+    });
+  } else {
+    // Fallback: start from first palace
+    TRANG_SINH.forEach((ts, i) => {
+      palaceData[i % 12].trangSinh = ts;
+    });
+  }
+
+  /* ── Step 9: Tứ Hóa (deterministic from Thiên Can) ── */
+  if (typeof TU_HOA_TABLE !== 'undefined' && TU_HOA_TABLE[canIdx]) {
+    const hoaStars = TU_HOA_TABLE[canIdx];
+    hoaStars.forEach((starName, hoaIdx) => {
+      // Find which palace this star sits in
+      for (const p of palaceData) {
+        if (p.mainStars.includes(starName)) {
+          p.hoa.push({ star: starName, type: HOA_TYPES[hoaIdx] });
+          break;
+        }
+      }
+    });
+  } else {
+    // Fallback: hash-based
+    const rng = mulberry32(seedHash(name + dateStr + hour + gender));
+    const allMainInPalaces = [];
+    palaceData.forEach((p, pi) => { p.mainStars.forEach(s => { allMainInPalaces.push({ star: s, palace: pi }); }); });
+    for (let i = 0; i < 4 && allMainInPalaces.length > 0; i++) {
+      const idx = Math.floor(rng() * allMainInPalaces.length);
+      const t = allMainInPalaces.splice(idx, 1)[0];
+      palaceData[t.palace].hoa.push({ star: t.star, type: HOA_TYPES[i] });
+    }
+  }
+
+  /* ── Step 10: Tuần & Triệt ── */
+  // Tuần Không: 2 missing branches in the current 60-cycle decade
+  const tuanStartChi = ((chiIdx - canIdx) % 12 + 12) % 12;
+  const tuanPos1 = (tuanStartChi + 10) % 12;
+  const tuanPos2 = (tuanStartChi + 11) % 12;
+  // Triệt Lộ: determined by canIdx % 5
+  const trietPos1 = (8 - 2 * (canIdx % 5) + 12) % 12;
   const trietPos2 = (trietPos1 + 1) % 12;
 
-  /* Đại hạn */
-  const direction = gender === 'M' ? (canIdx % 2 === 0 ? 1 : -1) : (canIdx % 2 === 0 ? -1 : 1);
+  /* ── Step 11: Đại Hạn (corrected starting age from Cục) ── */
+  const isYangYear = canIdx % 2 === 0;
+  const isMale = gender === 'M';
+  const direction = (isYangYear === isMale) ? 1 : -1;
+  const startAge = cucValue;
   palaceData.forEach((p, i) => {
     const offset = direction > 0 ? i : (12 - i) % 12;
-    const from = 2 + offset * 10;
+    const from = startAge + offset * 10;
     const to = from + 9;
     p.daiHan = `${from}–${to}`;
   });
@@ -826,7 +992,9 @@ function generateChart(name, dateStr, hour, gender) {
   return {
     palaceData, menhHanh, thienCan, diaChi, menhPos, thanPos,
     tuanPos1, tuanPos2, trietPos1, trietPos2,
-    year, month, day, napAm, cuc, amDuong, menhChu
+    year: gYear, month: gMonth, day: gDay,
+    lunarYear, lunarMonth, lunarDay, canIdx, chiIdx,
+    napAm, cuc, cucValue, amDuong, menhChu, direction
   };
 }
 
@@ -944,93 +1112,115 @@ function renderChart(chartData, name, dateStr, hour, gender) {
   }
 }
 
-/* ── Generate Interpretations ── */
+/* ── Generate Interpretations (all 12 palaces) ── */
 function generateInterpretations(chartData) {
   const { palaceData } = chartData;
-  const targets = [
-    { idx: 0, icon: '✦' },
-    { idx: 4, icon: '◈' },
-    { idx: 8, icon: '⚝' },
-    { idx: 2, icon: '❦' }
-  ];
   const list = document.getElementById('interp-list');
   list.innerHTML = '';
+  const isVi = currentLang === 'vi';
+  const meanings = isVi ? STAR_MEANINGS_VI : STAR_MEANINGS;
 
-  targets.forEach((t, ti) => {
-    const p = palaceData[t.idx];
+  const icons = ['✦','◈','❦','⚝','◇','☆','✧','◆','✦','◈','❦','⚝'];
+
+  palaceData.forEach((p, ti) => {
     const stars = p.mainStars;
     const el = p.element;
-    const isVi = currentLang === 'vi';
-    const meanings = isVi ? STAR_MEANINGS_VI : STAR_MEANINGS;
 
-    let text = `<span class="interp-tag">${el} · ${EL_NAMES[el]}</span> `;
+    let text = `<span class="interp-tag">${el} · ${EL_NAMES[el] || el}</span> `;
+
+    // Check for PALACE_STAR_MEANINGS from tuvi-data.js
+    const hasPSM = typeof PALACE_STAR_MEANINGS !== 'undefined';
+
     if (stars.length > 0) {
-      if (isVi) {
-        text += `Cung ${p.vi} có <strong>${stars.join('</strong> và <strong>')}</strong> tọa thủ. Điều này cho thấy ${stars.map(s => meanings[s] || 'một ảnh hưởng chưa rõ ràng').join('. Bên cạnh đó, ')}. `;
+      if (hasPSM && PALACE_STAR_MEANINGS[p.vi]) {
+        // Use detailed palace-star meanings
+        stars.forEach(s => {
+          const psm = PALACE_STAR_MEANINGS[p.vi] && PALACE_STAR_MEANINGS[p.vi][s];
+          if (psm) {
+            text += `<strong>${s}</strong>: ${isVi ? psm.vi : psm.en} `;
+          } else if (meanings[s]) {
+            text += `<strong>${s}</strong>: ${meanings[s]}. `;
+          }
+        });
       } else {
-        text += `Your ${p.en} palace has <strong>${stars.join('</strong> and <strong>')}</strong> sitting in it. What this means in practice: ${stars.map(s => meanings[s] || 'an influence that is not yet clear').join('. Additionally, ')}. `;
+        // Fallback to generic star meanings
+        if (isVi) {
+          text += `Cung ${p.vi} có <strong>${stars.join('</strong> và <strong>')}</strong> tọa thủ. Điều này cho thấy ${stars.map(s => meanings[s] || 'một ảnh hưởng chưa rõ ràng').join('. Bên cạnh đó, ')}. `;
+        } else {
+          text += `Your ${p.en} palace has <strong>${stars.join('</strong> and <strong>')}</strong> sitting in it. What this means in practice: ${stars.map(s => meanings[s] || 'an influence that is not yet clear').join('. Additionally, ')}. `;
+        }
+      }
+    } else {
+      // Empty palace handling
+      if (typeof EMPTY_PALACE_MEANINGS !== 'undefined' && EMPTY_PALACE_MEANINGS[p.vi]) {
+        const epm = EMPTY_PALACE_MEANINGS[p.vi];
+        text += isVi ? epm.vi : epm.en;
+      } else {
+        text += isVi
+          ? `Cung ${p.vi} không có chính tinh tọa thủ. Ảnh hưởng của cung này chủ yếu đến từ các sao phụ và các cung tam hợp.`
+          : `Your ${p.en} palace has no main stars. Its influence comes primarily from auxiliary stars and trine palaces.`;
       }
     }
 
+    // Element interaction
     const elInteractions = isVi ? {
-      Kim:'Cung này thuộc hành Kim — hành của sự quyết đoán và rõ ràng. Về mặt thực tế, nó hỗ trợ các quyết định tài chính và khả năng cắt bỏ những gì không cần thiết.',
-      Mộc:'Cung này thuộc hành Mộc — hành của sự phát triển và mở rộng. Các vấn đề liên quan đến cung này có xu hướng tiến triển từ từ nhưng bền vững theo thời gian.',
-      Thủy:'Cung này thuộc hành Thủy — hành của sự linh hoạt và trực giác. Người có hành Thủy ở đây thường giỏi thích ứng và tìm ra giải pháp mà người khác bỏ qua.',
-      Hỏa:'Cung này thuộc hành Hỏa — hành của sự năng động và nổi bật. Các vấn đề ở cung này thường diễn ra nhanh, rõ ràng, và thu hút sự chú ý từ bên ngoài.',
-      Thổ:'Cung này thuộc hành Thổ — hành của sự ổn định và kiên nhẫn. Nền tảng ở đây vững chắc, phù hợp cho các kế hoạch dài hạn cần thời gian để đơm hoa kết trái.'
+      Kim:'Cung thuộc hành Kim — quyết đoán, rõ ràng.',
+      Mộc:'Cung thuộc hành Mộc — phát triển, mở rộng.',
+      Thủy:'Cung thuộc hành Thủy — linh hoạt, trực giác.',
+      Hỏa:'Cung thuộc hành Hỏa — năng động, nổi bật.',
+      Thổ:'Cung thuộc hành Thổ — ổn định, kiên nhẫn.'
     } : {
-      Kim:'This palace falls under the Metal element, which relates to decisiveness and clarity. In practical terms, it supports financial decisions and the ability to cut away what is unnecessary.',
-      Mộc:'This palace falls under the Wood element, which relates to growth and expansion. Matters tied to this palace tend to develop slowly but hold up well over time.',
-      Thủy:'This palace falls under the Water element, which relates to adaptability and intuition. People with Water here are usually good at finding solutions that others overlook.',
-      Hỏa:'This palace falls under the Fire element, which relates to energy and visibility. Things connected to this palace tend to move quickly and attract outside attention.',
-      Thổ:'This palace falls under the Earth element, which relates to stability and patience. The foundation here is solid — well-suited for long-term plans that need time to mature.'
+      Kim:'Metal element — decisiveness, clarity.',
+      Mộc:'Wood element — growth, expansion.',
+      Thủy:'Water element — adaptability, intuition.',
+      Hỏa:'Fire element — energy, visibility.',
+      Thổ:'Earth element — stability, patience.'
     };
-    text += elInteractions[el] + ' ';
+    if (elInteractions[el]) text += elInteractions[el] + ' ';
 
+    // Ngũ Hành sinh khắc analysis
+    if (stars.length > 0 && typeof analyzeNguHanh !== 'undefined' && typeof NGU_HANH_EFFECTS !== 'undefined') {
+      stars.forEach(s => {
+        const starEl = STAR_DATA[s] ? STAR_DATA[s].el : null;
+        if (starEl && starEl !== el) {
+          const rel = analyzeNguHanh(starEl, el);
+          if (rel && NGU_HANH_EFFECTS[rel]) {
+            const eff = NGU_HANH_EFFECTS[rel];
+            text += (isVi ? eff.vi : eff.en) + ' ';
+          }
+        }
+      });
+    }
+
+    // Tứ Hóa
     if (p.hoa.length > 0) {
       p.hoa.forEach(h => {
         const hoaTexts = isVi ? {
-          'Hóa Lộc':'Cung này có Hóa Lộc chiếu vào, nghĩa là về mặt tài lộc và cơ hội, đây là một điểm thuận lợi rõ rệt. Các nguồn lực, mối quan hệ có ích, và những dịp may thường đến dễ dàng hơn bình thường ở lĩnh vực này.',
-          'Hóa Quyền':'Hóa Quyền có mặt ở đây cho thấy bạn có khả năng nắm quyền kiểm soát và ra quyết định mạnh mẽ trong lĩnh vực này. Đây là vị trí mà bạn tự nhiên muốn chủ động và thường làm tốt khi được giao trọng trách.',
-          'Hóa Khoa':'Hóa Khoa ở cung này là dấu hiệu tốt cho danh tiếng và sự công nhận. Những nỗ lực của bạn ở lĩnh vực này có xu hướng được người khác chú ý và đánh giá cao — đặc biệt trong các hoạt động liên quan đến học vấn hoặc chuyên môn.',
-          'Hóa Kỵ':'Tuy nhiên, Hóa Kỵ cũng có mặt, nghĩa là lĩnh vực này không hoàn toàn suôn sẻ. Sẽ có trở ngại, hiểu lầm, hoặc những lần phải làm lại. Nhưng đây không hẳn là xấu — những khó khăn này thường là chất xúc tác để bạn trưởng thành và làm tốt hơn.'
+          'Hóa Lộc':'Hóa Lộc chiếu vào — thuận lợi cho tài lộc và cơ hội.',
+          'Hóa Quyền':'Hóa Quyền có mặt — khả năng nắm quyền kiểm soát mạnh.',
+          'Hóa Khoa':'Hóa Khoa — tốt cho danh tiếng và sự công nhận.',
+          'Hóa Kỵ':'Hóa Kỵ — có trở ngại nhưng thúc đẩy trưởng thành.'
         } : {
-          'Hóa Lộc':'This palace also receives Hóa Lộc, which is a strong positive indicator for resources and opportunities. In practical terms, things tend to come together more easily here — useful connections, financial openings, and favorable timing.',
-          'Hóa Quyền':'Hóa Quyền is present here, which points to a strong capacity for taking charge and making decisions in this area of life. You naturally want to be in control here, and you usually do well when given responsibility.',
-          'Hóa Khoa':'Hóa Khoa in this palace is a good sign for reputation and recognition. Your efforts in this area tend to get noticed and appreciated by others — especially anything related to learning, expertise, or professional standing.',
-          'Hóa Kỵ':'That said, Hóa Kỵ is also present, which means this area will not be entirely smooth. Expect some friction — misunderstandings, setbacks, or things that need to be redone. But this is not necessarily bad news: these difficulties often push you to grow and ultimately perform better than you would have otherwise.'
+          'Hóa Lộc':'Hóa Lộc present — strong indicator for resources and opportunities.',
+          'Hóa Quyền':'Hóa Quyền present — capacity for taking charge.',
+          'Hóa Khoa':'Hóa Khoa present — favorable for reputation.',
+          'Hóa Kỵ':'Hóa Kỵ present — some friction, but drives growth.'
         };
         text += hoaTexts[h.type.label] + ' ';
       });
     }
 
-    if (stars.length >= 2) {
-      if (isVi) {
-        text += `<br><br>Việc nhiều sao cùng tọa một cung tạo thành cái gọi là Cách Cục — tức là các sao tương tác với nhau chứ không hoạt động riêng lẻ. `;
-        if (stars.includes('Tử Vi') && stars.includes('Thiên Phủ')) {
-          text += `Tử Vi đi cùng Thiên Phủ là một tổ hợp rất tốt. Nói đơn giản: khả năng lãnh đạo kết hợp với nền tảng tài chính vững — người có cách cục này thường vừa có tầm nhìn vừa có nguồn lực để thực hiện nó. Đây là một trong những cách cục được đánh giá cao nhất trong Tử Vi.`;
-        } else if (stars.includes('Thất Sát') || stars.includes('Phá Quân')) {
-          text += `Các sao mạnh như Thất Sát hay Phá Quân khi kết hợp cho thấy cuộc sống ở lĩnh vực này sẽ có nhiều biến động — nhưng đó là kiểu biến động mang tính đột phá. Người có cách cục này thường phải trải qua khó khăn trước khi đạt được thành tựu đáng kể. Đường đi không phẳng, nhưng đích đến thường đáng giá.`;
-        } else {
-          text += `Các sao này bổ trợ cho nhau — mỗi sao bù đắp điểm yếu của sao còn lại. Trong thực tế, điều này có nghĩa là bạn có khả năng cân bằng tốt ở lĩnh vực này, không quá thiên lệch về một hướng nào. Sự tương tác theo Ngũ Hành giữa chúng cũng hỗ trợ cho sự phát triển ổn định.`;
-        }
-      } else {
-        text += `<br><br>Having multiple stars in the same palace creates what is called a Cách Cục — the stars interact with each other rather than working independently. `;
-        if (stars.includes('Tử Vi') && stars.includes('Thiên Phủ')) {
-          text += `Tử Vi paired with Thiên Phủ is one of the strongest combinations in the system. Put simply: leadership ability combined with solid financial backing. People with this pattern tend to have both the vision and the resources to follow through. It is widely considered one of the most favorable configurations.`;
-        } else if (stars.includes('Thất Sát') || stars.includes('Phá Quân')) {
-          text += `Strong stars like Thất Sát or Phá Quân together indicate that this area of life will see real turbulence — but it is the kind of turbulence that leads to breakthroughs. People with this pattern usually have to go through difficulty before achieving something significant. The path is not smooth, but the destination tends to be worth it.`;
-        } else {
-          text += `These stars complement each other — each one offsets the weaknesses of the other. In practice, this means you have a good balance in this area, without being too heavily skewed in any one direction. The Five Element interactions between them also support steady, sustainable development.`;
-        }
-      }
+    // Đại Hạn interpretation
+    if (typeof DAI_HAN_MEANINGS !== 'undefined' && DAI_HAN_MEANINGS[p.vi]) {
+      const dhm = DAI_HAN_MEANINGS[p.vi];
+      text += `<br><br><em>${isVi ? 'Đại Hạn' : 'Major Period'} (${p.daiHan}):</em> ${isVi ? dhm.vi : dhm.en}`;
     }
 
     const acc = document.createElement('div');
     acc.className = 'accordion';
     acc.innerHTML = `
       <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
-        <h3>${t.icon} ${p.vi} — ${p.en}</h3>
+        <h3>${icons[ti % 12]} ${p.vi} — ${p.en}${p.isMenh ? ' <span style="color:var(--gold);font-size:.7em;">[Mệnh]</span>' : ''}${p.isThan ? ' <span style="color:var(--gold);font-size:.7em;">[Thân]</span>' : ''}</h3>
         <span class="acc-icon">▾</span>
       </div>
       <div class="accordion-body"><div class="accordion-content">${text}</div></div>
@@ -1038,6 +1228,98 @@ function generateInterpretations(chartData) {
     if (ti === 0) acc.classList.add('open');
     list.appendChild(acc);
   });
+}
+
+/* ── Tổng Luận (Overall Synthesis) ── */
+function generateTongLuan(chartData) {
+  const { palaceData, menhHanh, thienCan, diaChi, cuc, menhChu, canIdx, direction } = chartData;
+  const isVi = currentLang === 'vi';
+  const area = document.getElementById('tongluan-area');
+  const content = document.getElementById('tongluan-content');
+  if (!area || !content) return;
+
+  let html = '';
+
+  // Opening
+  const yearName = `${thienCan} ${diaChi}`;
+  html += `<p><strong>${isVi ? 'Lá số' : 'Chart'}:</strong> ${yearName} · ${cuc} · ${isVi ? 'Mệnh' : 'Destiny'} ${menhHanh} · ${isVi ? 'Mệnh chủ' : 'Ruling star'}: ${menhChu}</p>`;
+
+  // Cách Cục recognition
+  if (typeof CACH_CUC_PATTERNS !== 'undefined') {
+    // Build starPositions map (star name → branch index) from palaceData
+    const starPositions = {};
+    palaceData.forEach(p => {
+      p.mainStars.forEach(s => { starPositions[s] = p.branchIdx; });
+    });
+    const auxPositions = {};
+    palaceData.forEach(p => {
+      p.auxStars.forEach(s => { auxPositions[s] = p.branchIdx; });
+    });
+    const hoaMap = {};
+    palaceData.forEach(p => {
+      p.hoa.forEach(h => {
+        const key = h.type.name.toLowerCase();
+        hoaMap[key] = p.branchIdx;
+      });
+    });
+
+    const found = [];
+    CACH_CUC_PATTERNS.forEach(pattern => {
+      try {
+        if (pattern.condition(starPositions, auxPositions, hoaMap, chartData.menhPos)) {
+          found.push(pattern);
+        }
+      } catch(e) {}
+    });
+    if (found.length > 0) {
+      html += `<p style="margin-top:.8rem;"><strong>${isVi ? 'Cách Cục nhận diện' : 'Recognized Patterns'}:</strong></p><ul>`;
+      found.forEach(f => {
+        const name = isVi ? f.name : (f.nameEn || f.name);
+        const meaning = f.meaning ? (isVi ? f.meaning.vi : f.meaning.en) : '';
+        html += `<li><strong>${name}</strong> <span style="font-size:.8rem;color:var(--text-dim);">(${f.rating})</span>: ${meaning}</li>`;
+      });
+      html += '</ul>';
+    }
+  }
+
+  // Tứ Hóa summary
+  const allHoa = [];
+  palaceData.forEach(p => {
+    p.hoa.forEach(h => allHoa.push({ star: h.star, type: h.type.label, palace: p.vi, palaceEn: p.en }));
+  });
+  if (allHoa.length > 0) {
+    html += `<p style="margin-top:.8rem;"><strong>${isVi ? 'Tứ Hóa' : 'Four Transformations'}:</strong></p><ul>`;
+    allHoa.forEach(h => {
+      html += `<li>${h.star} — ${h.type} ${isVi ? 'tại' : 'in'} ${isVi ? h.palace : h.palaceEn}</li>`;
+    });
+    html += '</ul>';
+  }
+
+  // Current Đại Hạn
+  const currentYear = new Date().getFullYear();
+  const age = currentYear - chartData.year;
+  let currentDaiHan = null;
+  palaceData.forEach(p => {
+    const parts = p.daiHan.split('–');
+    const from = parseInt(parts[0]), to = parseInt(parts[1]);
+    if (age >= from && age <= to) currentDaiHan = p;
+  });
+  if (currentDaiHan) {
+    html += `<p style="margin-top:.8rem;"><strong>${isVi ? 'Đại Hạn hiện tại' : 'Current Major Period'} (${currentDaiHan.daiHan}):</strong> ${isVi ? 'Cung' : 'Palace'} ${isVi ? currentDaiHan.vi : currentDaiHan.en}`;
+    if (typeof DAI_HAN_MEANINGS !== 'undefined' && DAI_HAN_MEANINGS[currentDaiHan.vi]) {
+      const dhm = DAI_HAN_MEANINGS[currentDaiHan.vi];
+      html += ` — ${isVi ? dhm.vi : dhm.en}`;
+    }
+    html += '</p>';
+  }
+
+  // Final advice
+  html += `<p style="margin-top:1rem;font-style:italic;color:var(--gold);">${isVi
+    ? 'Lá số Tử Vi cho thấy xu hướng, không phải số phận cố định. Hiểu biết bản thân qua lá số giúp bạn phát huy điểm mạnh và chuẩn bị cho thử thách.'
+    : 'The Tu Vi chart reveals tendencies, not fixed destiny. Self-knowledge through the chart helps you leverage strengths and prepare for challenges.'}</p>`;
+
+  content.innerHTML = html;
+  area.style.display = 'block';
 }
 
 /* ── Daily Guidance Generator ── */
@@ -1159,6 +1441,9 @@ function generateGuidance(chartData) {
 /* ── Form Submit ── */
 let lastChartData = null, lastName='', lastDateStr='', lastHour=0, lastGender='M';
 
+// Lunar preview on date change
+document.getElementById('bdate').addEventListener('change', updateLunarPreview);
+
 document.getElementById('birthForm').addEventListener('submit', function(e) {
   e.preventDefault();
   const name = document.getElementById('fname').value.trim();
@@ -1172,19 +1457,32 @@ document.getElementById('birthForm').addEventListener('submit', function(e) {
   lastChartData = generateChart(name, dateStr, hour, gender);
 
   document.getElementById('chart-title').textContent = `Lá Số — ${name}`;
-  const d = new Date(dateStr);
-  document.getElementById('chart-sub').textContent = `${d.toLocaleDateString('vi-VN')} · Giờ ${HOUR_NAMES[hour]} · ${gender === 'M' ? 'Nam' : 'Nữ'} · ${lastChartData.thienCan} ${lastChartData.diaChi} · ${lastChartData.napAm}`;
+  const dd = new Date(dateStr);
+  let subText = `${dd.toLocaleDateString('vi-VN')} · Giờ ${HOUR_NAMES[hour]} · ${gender === 'M' ? 'Nam' : 'Nữ'} · ${lastChartData.thienCan} ${lastChartData.diaChi} · ${lastChartData.napAm}`;
+  // Append lunar date info
+  if (lastChartData.lunarYear && typeof formatLunarDate !== 'undefined') {
+    subText += ' · ' + formatLunarDate({
+      lunarYear: lastChartData.lunarYear, lunarMonth: lastChartData.lunarMonth,
+      lunarDay: lastChartData.lunarDay, canIdx: lastChartData.canIdx,
+      chiIdx: lastChartData.chiIdx, isLeapMonth: false
+    }, currentLang);
+  }
+  document.getElementById('chart-sub').textContent = subText;
 
   renderChart(lastChartData, name, dateStr, hour, gender);
   generateGuidance(lastChartData);
   generateInterpretations(lastChartData);
+  generateTongLuan(lastChartData);
 
   document.getElementById('chart-area').style.display = 'block';
   document.getElementById('guidance-area').style.display = 'block';
   document.getElementById('interp-area').style.display = 'block';
+  document.getElementById('tongluan-area').style.display = 'block';
 
   document.getElementById('chart-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 </script>
+<script src="lunar-data.js"></script>
+<script src="tuvi-data.js"></script>
 </body>
 </html>

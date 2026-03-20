@@ -434,6 +434,64 @@ body.lang-vi .lang-toggle, body.lang-vi .nav-links a,
 body.lang-vi .cf-name, body.lang-vi .cf-kw {
   font-family: 'Roboto', 'Times New Roman', sans-serif !important;
 }
+
+.q-model-btn {
+  font-family: 'Cinzel', serif; font-size: .65rem;
+  letter-spacing: .15em; text-transform: uppercase;
+  padding: .5rem 1rem; border: 1px solid var(--gold-dim);
+  background: transparent; color: var(--text-dim);
+  cursor: none; border-radius: 3px; transition: all .3s;
+}
+.q-model-btn:hover { border-color: var(--gold); color: var(--gold); }
+.q-model-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.08); }
+
+.card-wrap.reversed .card-front {
+  border-color: rgba(150, 120, 180, .55);
+  box-shadow: 0 8px 35px rgba(0,0,0,.6), 0 0 22px rgba(150,120,180,.15);
+}
+.reversed-badge {
+  position: absolute; top: 4px; right: 4px;
+  font-size: .5rem; color: rgba(150,120,180,.9);
+  background: rgba(150,120,180,.15); padding: .15rem .3rem;
+  border-radius: 2px; font-weight: 700; letter-spacing: .05em;
+}
+.r-reversed-tag {
+  font-size: .7rem; color: rgba(150,120,180,.9);
+  font-weight: 600; margin-left: .3rem;
+}
+.r-reversed-meaning {
+  margin-top: .6rem; padding: .6rem .8rem;
+  background: rgba(150,120,180,.08); border-left: 2px solid rgba(150,120,180,.4);
+  border-radius: 0 4px 4px 0; font-size: .82rem; color: rgba(150,120,180,.85);
+  line-height: 1.55;
+}
+.r-position-interp {
+  margin-top: .5rem; padding: .5rem 0; font-size: .88rem;
+  color: var(--text-dim); line-height: 1.6; font-style: italic;
+  border-top: 1px solid rgba(201,168,76,.1);
+}
+.synth-section { margin-bottom: 1.2rem; }
+.synth-section-title {
+  font-family: 'Cinzel', serif; font-size: .72rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--gold); margin-bottom: .5rem;
+}
+.synth-opening { font-size: .95rem; line-height: 1.65; color: var(--text); margin-bottom: 1rem; }
+.synth-thread { font-size: .88rem; line-height: 1.6; color: var(--text-dim); }
+.synth-elements { font-size: .85rem; line-height: 1.55; color: var(--text-dim); }
+.synth-path { font-size: .88rem; line-height: 1.6; }
+.synth-path ol { padding-left: 1.2rem; margin: .4rem 0 0; }
+.synth-path li { margin-bottom: .3rem; color: var(--text-dim); }
+.synth-badges {
+  display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+  margin-top: 1rem; padding-top: .8rem;
+  border-top: 1px solid rgba(201,168,76,.12);
+}
+.synth-badge {
+  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+  padding: .35rem .8rem; border: 1px solid rgba(201,168,76,.25);
+  border-radius: 3px; color: var(--gold-dim); font-family: 'Cinzel', serif;
+}
+.synth-badge .badge-icon { margin-right: .3rem; }
 </style>
 </head>
 <body>
@@ -473,6 +531,12 @@ body.lang-vi .cf-name, body.lang-vi .cf-kw {
   <div class="q-area">
     <div class="q-label">Contemplate your question</div>
     <input class="q-input" type="text" placeholder="What guidance do you seek?" id="qInput">
+    <div class="q-models" id="questionModels" style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+      <button class="q-model-btn active" data-model="general" onclick="selectQuestionModel('general')">✦ General</button>
+      <button class="q-model-btn" data-model="problem" onclick="selectQuestionModel('problem')">🔍 Problem Analysis</button>
+      <button class="q-model-btn" data-model="solution" onclick="selectQuestionModel('solution')">💡 Solution / Action</button>
+      <button class="q-model-btn" data-model="crossroads" onclick="selectQuestionModel('crossroads')">⚡ Crossroads</button>
+    </div>
   </div>
 
   <div style="width:100%;max-width:900px;">
@@ -496,6 +560,10 @@ body.lang-vi .cf-name, body.lang-vi .cf-kw {
   </div>
 </div>
 
+<script src="tarot-data.js"></script>
+<script>
+if (typeof REVERSED_MEANINGS === 'undefined') console.warn('tarot-data.js failed to load');
+</script>
 <script>
 // ─── DECK DATA (78 cards) ────────────────────────────────────────────────────
 const DECK = [
@@ -876,6 +944,15 @@ const POSITIONS = ["Past","Present","Future"];
 let drawnCards = [];
 let flippedCount = 0;
 
+let selectedModel = 'general';
+
+function selectQuestionModel(model) {
+  selectedModel = model;
+  document.querySelectorAll('.q-model-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.model === model);
+  });
+}
+
 // ─── LANGUAGE ─────────────────────────────────────────────────────────────────
 function toggleLang() {
   currentLang = currentLang === 'en' ? 'vi' : 'en';
@@ -896,6 +973,13 @@ function applyLang() {
   if (sb.style.display !== 'none' && !sb.disabled) sb.textContent = T.shuffleTxt;
   const rb = document.getElementById('resetBtn');
   if (rb.style.display !== 'none') rb.textContent = T.resetTxt;
+  document.querySelectorAll('.q-model-btn').forEach(btn => {
+    const model = btn.dataset.model;
+    if (typeof QUESTION_MODELS !== 'undefined' && QUESTION_MODELS[model]) {
+      const data = QUESTION_MODELS[model];
+      btn.textContent = `${data.icon} ${currentLang === 'vi' ? data.vi : data.en}`;
+    }
+  });
   const instr = document.getElementById('instr');
   if (instr.textContent) instr.textContent = T.instrInit;
   if (drawnCards.length === 0) {
@@ -922,7 +1006,9 @@ function renderCardFront(cf, card) {
   const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
   const suitDisplay = card.arcana === 'major' ? card.num : (currentLang === 'vi' ? card.suit : d.suit);
   cf.style.background = `linear-gradient(155deg,${card.col[0]} 0%,${card.col[1]} 60%,${card.col[0]} 100%)`;
+  const reversedBadge = card.isReversed ? `<div class="reversed-badge">↓ R</div>` : '';
   cf.innerHTML = `
+    ${reversedBadge}
     <div class="cf-inner">
       <div class="cf-orn">✦ · ✦</div>
       <div class="cf-num">${suitDisplay}</div>
@@ -931,6 +1017,15 @@ function renderCardFront(cf, card) {
       <div class="cf-kw">${d.kw.join(' · ')}</div>
       <div class="cf-orn">✦ · ✦</div>
     </div>`;
+  // Apply reversed class to the card-wrap
+  const cfId = cf.id; // e.g. "cf0", "cf1", "cf2"
+  if (cfId) {
+    const idx = cfId.replace('cf', '');
+    const cardWrap = document.getElementById(`cw${idx}`);
+    if (cardWrap) {
+      cardWrap.classList.toggle('reversed', !!card.isReversed);
+    }
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
@@ -972,6 +1067,10 @@ function shuffleAndDeal() {
     [deck[i], deck[j]] = [deck[j], deck[i]];
   }
   drawnCards = deck.slice(0, 3);
+  drawnCards = drawnCards.map(card => ({
+    ...card,
+    isReversed: Math.random() < 0.5,
+  }));
 
   // Populate fronts
   drawnCards.forEach((card, i) => {
@@ -1027,89 +1126,223 @@ function spawnSparkles(el) {
   }
 }
 
+// ─── SYNTHESIS HELPERS ────────────────────────────────────────────────────────
+
+function getCardElement(card) {
+  if (card.arcana === 'major') return 'spirit';
+  return SUIT_ELEMENT[card.suit] || 'spirit';
+}
+
+function analyzeElements(cards) {
+  const counts = { fire: 0, water: 0, air: 0, earth: 0, spirit: 0 };
+  let majorCount = 0;
+  cards.forEach(card => {
+    const el = getCardElement(card);
+    counts[el]++;
+    if (card.arcana === 'major') majorCount++;
+  });
+  const dominant = Object.entries(counts).filter(([k, v]) => v >= 2).map(([k]) => k);
+  const missing = ['fire', 'water', 'air', 'earth'].filter(e => counts[e] === 0);
+  return { counts, dominant, missing, majorCount };
+}
+
+function findInteraction(cardA, cardB) {
+  for (const pattern of CARD_INTERACTIONS) {
+    if (pattern.condition(cardA, cardB)) return pattern;
+  }
+  // Fallback: element transition
+  const elA = getCardElement(cardA);
+  const elB = getCardElement(cardB);
+  if (elA !== elB) {
+    const key = `${elA}→${elB}`;
+    if (ELEMENT_TRANSITIONS[key]) return ELEMENT_TRANSITIONS[key];
+  }
+  return null;
+}
+
+function determineEnergy(cards, analysis) {
+  const names = cards.map(c => c.name);
+  const transformCards = ['Death', 'The Tower', 'Wheel of Fortune'];
+  const healCards = ['The Star', 'Temperance'];
+  const reversedCount = cards.filter(c => c.isReversed).length;
+
+  if (names.some(n => transformCards.includes(n))) return 'transformative';
+  if (names.some(n => healCards.includes(n)) || analysis.dominant.includes('water')) return 'healing';
+  if (reversedCount >= 2 || analysis.dominant.includes('air')) return 'challenging';
+  if (analysis.majorCount >= 2) return 'intense';
+  return 'harmonious';
+}
+
+function determineConfidence(cards, analysis) {
+  const futureReversed = cards[2] && cards[2].isReversed;
+  const allReversed = cards.every(c => c.isReversed);
+  if (allReversed || analysis.dominant.length === 0) return 'low';
+  if (analysis.dominant.length >= 1 && !futureReversed) return 'high';
+  return 'moderate';
+}
+
+function generateActionSteps(futureCard, model, isVi) {
+  const steps = [];
+  const d = isVi ? DECK_VI[futureCard.id] : futureCard;
+  // Step 1: based on future card
+  if (futureCard.isReversed && typeof REVERSED_MEANINGS !== 'undefined' && REVERSED_MEANINGS[futureCard.id]) {
+    const rev = REVERSED_MEANINGS[futureCard.id];
+    steps.push(isVi
+      ? `Hãy đối mặt với thử thách của ${futureCard.name} ngược: nhận diện điều đang bị chặn và hành động để giải phóng nó.`
+      : `Face the challenge of reversed ${futureCard.name}: identify what is blocked and take action to release it.`);
+  } else {
+    steps.push(isVi
+      ? `Đón nhận năng lượng của ${futureCard.name}: ${d.kw.join(', ')}. Hãy để những phẩm chất này dẫn dắt bước tiếp theo.`
+      : `Embrace the energy of ${futureCard.name}: ${d.kw.join(', ')}. Let these qualities guide your next step.`);
+  }
+  // Step 2: based on question model
+  const modelSteps = {
+    general: { en: 'Stay open to the message and revisit this reading in a week to see how events have unfolded.', vi: 'Giữ tâm mở với thông điệp và xem lại bài đọc sau một tuần để thấy sự kiện đã diễn biến ra sao.' },
+    problem: { en: 'Name the obstacle specifically, then take one concrete action today to address its root cause.', vi: 'Gọi tên chướng ngại cụ thể, sau đó thực hiện một hành động cụ thể hôm nay để xử lý nguyên nhân gốc rễ.' },
+    solution: { en: 'Commit to the first step within 24 hours — momentum matters more than perfection right now.', vi: 'Cam kết thực hiện bước đầu tiên trong vòng 24 giờ — động lực quan trọng hơn sự hoàn hảo lúc này.' },
+    crossroads: { en: 'Write down both options and their consequences. Sleep on it, then choose with conviction by morning.', vi: 'Viết ra cả hai lựa chọn và hệ quả. Suy ngẫm qua đêm, rồi chọn với sự tin tưởng vào sáng mai.' }
+  };
+  steps.push(modelSteps[model] ? (isVi ? modelSteps[model].vi : modelSteps[model].en) : (isVi ? 'Tin vào trực giác của bạn.' : 'Trust your intuition.'));
+  return steps;
+}
+
 // ─── SHOW READING ─────────────────────────────────────────────────────────────
 function showReading() {
   const panel = document.getElementById('readingPanel');
+  const isVi = currentLang === 'vi';
+  const posKeys = ['past', 'present', 'future'];
+
   document.getElementById('cardReadings').innerHTML = drawnCards.map((card, i) => {
-    const d = currentLang === 'vi' ? DECK_VI[card.id] : card;
+    const d = isVi ? DECK_VI[card.id] : card;
+    const posKey = posKeys[i];
+    let posInterp = '';
+
+    // Position-specific interpretation
+    if (card.arcana === 'major' && typeof MAJOR_POSITION_INTERP !== 'undefined' && MAJOR_POSITION_INTERP[card.id]) {
+      const mpi = MAJOR_POSITION_INTERP[card.id][posKey];
+      if (mpi) posInterp = isVi ? mpi.vi : mpi.en;
+    } else if (typeof POSITION_FRAMES !== 'undefined' && POSITION_FRAMES[posKey]) {
+      const frame = POSITION_FRAMES[posKey];
+      const prefix = isVi ? frame.prefix_vi : frame.prefix_en;
+      posInterp = `${prefix} ${d.meaning}`;
+    }
+
+    // Reversed meaning
+    let reversedHtml = '';
+    if (card.isReversed && typeof REVERSED_MEANINGS !== 'undefined' && REVERSED_MEANINGS[card.id]) {
+      const rev = REVERSED_MEANINGS[card.id];
+      const revText = isVi ? rev.vi : rev.en;
+      const revLabel = isVi ? '↓ Ngược' : '↓ Reversed';
+      reversedHtml = `
+        <div class="r-reversed-meaning">
+          <span class="r-reversed-tag">${revLabel}</span> ${revText}
+        </div>`;
+    }
+
     return `
-    <div class="card-reading" style="animation-delay:${i*.18}s">
+    <div class="card-reading" style="animation-delay:${i * .18}s">
       <div class="r-pos">${T.positions[i]}</div>
       <div class="r-sym">${card.sym}</div>
-      <div class="r-name">${card.name}</div>
+      <div class="r-name">${card.name}${card.isReversed ? ' <span class="r-reversed-tag">↓ R</span>' : ''}</div>
       <div class="r-kw">${d.kw.join(' · ')}</div>
       <div class="r-meaning">${d.meaning}</div>
+      ${posInterp ? `<div class="r-position-interp">${posInterp}</div>` : ''}
+      ${reversedHtml}
     </div>`;
   }).join('');
   panel.classList.add('visible');
 
-  // Generate conclusion
   generateConclusion();
 
-  setTimeout(() => panel.scrollIntoView({ behavior:'smooth', block:'start' }), 250);
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
 }
 
 function generateConclusion() {
   const area = document.getElementById('conclusionArea');
   const box = document.getElementById('conclusionBox');
   const isVi = currentLang === 'vi';
+  const lk = isVi ? 'vi' : 'en';
 
-  const past = currentLang === 'vi' ? DECK_VI[drawnCards[0].id] : drawnCards[0];
-  const present = currentLang === 'vi' ? DECK_VI[drawnCards[1].id] : drawnCards[1];
-  const future = currentLang === 'vi' ? DECK_VI[drawnCards[2].id] : drawnCards[2];
-  // Always use English names for card names
-  const pastName = drawnCards[0].name;
-  const presentName = drawnCards[1].name;
-  const futureName = drawnCards[2].name;
+  // ── Analysis ──
+  const elAnalysis = analyzeElements(drawnCards);
+  const energyKey = determineEnergy(drawnCards, elAnalysis);
+  const confKey = determineConfidence(drawnCards, elAnalysis);
+  const energy = ENERGY_TYPES[energyKey];
+  const conf = CONFIDENCE_LEVELS[confKey];
 
-  // Determine overall energy (positive/mixed/challenging)
-  const challengeCards = ['Death','The Tower','The Devil','Five of Cups','Three of Swords','Ten of Swords','Nine of Swords','Five of Swords','Eight of Swords','Five of Pentacles'];
-  const positiveCards = ['The Sun','The Star','The World','Ace of Cups','Ten of Cups','Nine of Cups','Six of Wands','The Empress','Wheel of Fortune','Ace of Pentacles','Nine of Pentacles'];
+  // ── Opening (question-model aware) ──
+  const opening = (typeof QUESTION_MODEL_OPENINGS !== 'undefined' && QUESTION_MODEL_OPENINGS[selectedModel])
+    ? QUESTION_MODEL_OPENINGS[selectedModel][lk]
+    : (isVi ? 'Các lá bài đã lên tiếng.' : 'The cards have spoken.');
 
-  let positiveCount = 0, challengeCount = 0;
-  drawnCards.forEach(c => {
-    if (positiveCards.includes(c.name)) positiveCount++;
-    if (challengeCards.includes(c.name)) challengeCount++;
-  });
-
-  let overallTone, synthesis, adviceItems;
-
-  if (positiveCount > challengeCount) {
-    overallTone = isVi ? 'Năng lượng tổng thể: Tích cực' : 'Overall Energy: Positive';
-    synthesis = isVi
-      ? `Bộ bài của bạn mang một thông điệp đầy hy vọng. Từ quá khứ với <strong>${pastName}</strong>, qua hiện tại với <strong>${presentName}</strong>, đến tương lai với <strong>${futureName}</strong> — có một dòng chảy tích cực đang dẫn dắt bạn. Vũ trụ đang ủng hộ hành trình của bạn.`
-      : `Your spread carries a hopeful message. From the past with <strong>${pastName}</strong>, through the present with <strong>${presentName}</strong>, to the future with <strong>${futureName}</strong> — there is a positive current guiding you. The universe supports your journey.`;
-    adviceItems = isVi
-      ? ['Tin tưởng vào dòng chảy thuận lợi và tiếp tục tiến về phía trước','Tận dụng năng lượng tích cực để bắt đầu những dự án mới','Chia sẻ may mắn và ánh sáng của bạn với những người xung quanh']
-      : ['Trust the favorable current and keep moving forward','Harness this positive energy to start new ventures','Share your good fortune and light with those around you'];
-  } else if (challengeCount > positiveCount) {
-    overallTone = isVi ? 'Năng lượng tổng thể: Thử thách' : 'Overall Energy: Challenging';
-    synthesis = isVi
-      ? `Bộ bài cho thấy một giai đoạn thử thách. <strong>${pastName}</strong> trong quá khứ, <strong>${presentName}</strong> ở hiện tại, và <strong>${futureName}</strong> trong tương lai — tất cả đều nhắc nhở rằng khó khăn là bước đệm cho sự trưởng thành. Mỗi thử thách đều mang theo bài học quý giá.`
-      : `Your spread reveals a period of challenge. <strong>${pastName}</strong> in the past, <strong>${presentName}</strong> in the present, and <strong>${futureName}</strong> in the future — all remind you that difficulty is a stepping stone to growth. Every challenge carries a precious lesson.`;
-    adviceItems = isVi
-      ? ['Kiên nhẫn và từ bi với bản thân trong giai đoạn này','Tìm kiếm sự hỗ trợ từ những người bạn tin tưởng','Nhớ rằng sau mỗi cơn bão, bầu trời lại trong xanh hơn']
-      : ['Be patient and compassionate with yourself during this period','Seek support from those you trust','Remember that after every storm, the sky becomes clearer'];
-  } else {
-    overallTone = isVi ? 'Năng lượng tổng thể: Cân bằng' : 'Overall Energy: Balanced';
-    synthesis = isVi
-      ? `Bộ bài của bạn phản ánh sự cân bằng giữa ánh sáng và bóng tối. <strong>${pastName}</strong> từ quá khứ, <strong>${presentName}</strong> ở hiện tại, và <strong>${futureName}</strong> cho tương lai — cho thấy cuộc sống đang ở trạng thái chuyển tiếp. Đây là thời điểm để suy ngẫm và chọn lựa con đường đúng đắn.`
-      : `Your spread reflects a balance between light and shadow. <strong>${pastName}</strong> from the past, <strong>${presentName}</strong> in the present, and <strong>${futureName}</strong> for the future — suggest life is in a state of transition. This is a time for reflection and choosing the right path.`;
-    adviceItems = isVi
-      ? ['Dành thời gian suy ngẫm trước khi đưa ra quyết định quan trọng','Cân bằng giữa hành động và nghỉ ngơi','Lắng nghe trực giác — nó sẽ dẫn đường đúng lúc']
-      : ['Take time to reflect before making important decisions','Balance action with rest and contemplation','Listen to your intuition — it will guide you at the right moment'];
+  // ── Thread: card interactions ──
+  let threadParts = [];
+  // Check pairs: past↔present, present↔future, past↔future
+  const pairs = [[0,1],[1,2],[0,2]];
+  for (const [a, b] of pairs) {
+    const interaction = findInteraction(drawnCards[a], drawnCards[b]);
+    if (interaction) threadParts.push(interaction[lk]);
   }
+  const threadHtml = threadParts.length > 0
+    ? threadParts.map(t => `<p>${t}</p>`).join('')
+    : `<p>${isVi ? 'Các lá bài mang năng lượng riêng biệt, tạo nên một bức tranh đa chiều cho hành trình của bạn.' : 'The cards carry distinct energies, creating a multifaceted picture for your journey.'}</p>`;
 
-  const conclusionTitle = isVi ? '☽ Kết Luận Tổng Quan ☽' : '☽ Overall Conclusion ☽';
-  const adviceTitle = isVi ? 'Lời Khuyên Cho Bạn' : 'Guidance for You';
+  // ── Elements ──
+  let elemParts = [];
+  // Arcana ratio
+  if (typeof ARCANA_RATIO_TEXT !== 'undefined' && ARCANA_RATIO_TEXT[elAnalysis.majorCount]) {
+    elemParts.push(ARCANA_RATIO_TEXT[elAnalysis.majorCount][lk]);
+  }
+  // Dominant elements
+  for (const el of elAnalysis.dominant) {
+    if (typeof ELEMENT_DOMINANT !== 'undefined' && ELEMENT_DOMINANT[el]) {
+      elemParts.push(ELEMENT_DOMINANT[el][lk]);
+    }
+  }
+  // Missing elements
+  for (const el of elAnalysis.missing) {
+    if (typeof ELEMENT_MISSING !== 'undefined' && ELEMENT_MISSING[el]) {
+      elemParts.push(ELEMENT_MISSING[el][lk]);
+    }
+  }
+  const elemHtml = elemParts.length > 0
+    ? elemParts.map(e => `<p>${e}</p>`).join('')
+    : `<p>${isVi ? 'Sự cân bằng nguyên tố trong trải bài này khá đồng đều.' : 'The elemental balance in this spread is relatively even.'}</p>`;
+
+  // ── Action Steps ──
+  const steps = generateActionSteps(drawnCards[2], selectedModel, isVi);
+  const stepsHtml = `<ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
+
+  // ── Section labels ──
+  const labels = {
+    title: isVi ? '☽ Tổng Hợp Bài Đọc ☽' : '☽ Reading Synthesis ☽',
+    thread: isVi ? 'Sợi Chỉ Đỏ' : 'The Thread',
+    elements: isVi ? 'Phân Tích Nguyên Tố' : 'Element Analysis',
+    path: isVi ? 'Con Đường Phía Trước' : 'Path Forward',
+    energyLabel: isVi ? 'Năng Lượng' : 'Energy',
+    confLabel: isVi ? 'Độ Tin Cậy' : 'Confidence'
+  };
 
   box.innerHTML = `
-    <div class="conclusion-title">${conclusionTitle}</div>
-    <p style="font-size:.78rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:.8rem;font-family:'Cinzel',serif;">${overallTone}</p>
-    <p class="conclusion-text">${synthesis}</p>
-    <div class="conclusion-advice">
-      <h4>${adviceTitle}</h4>
-      <ul>${adviceItems.map(a => `<li>${a}</li>`).join('')}</ul>
+    <div class="conclusion-title">${labels.title}</div>
+    <div class="synth-section">
+      <div class="synth-opening">${opening}</div>
+    </div>
+    <div class="synth-section">
+      <div class="synth-section-title">${labels.thread}</div>
+      <div class="synth-thread">${threadHtml}</div>
+    </div>
+    <div class="synth-section">
+      <div class="synth-section-title">${labels.elements}</div>
+      <div class="synth-elements">${elemHtml}</div>
+    </div>
+    <div class="synth-section">
+      <div class="synth-section-title">${labels.path}</div>
+      <div class="synth-path">${stepsHtml}</div>
+    </div>
+    <div class="synth-badges">
+      <div class="synth-badge"><span class="badge-icon">${energy.icon}</span> ${labels.energyLabel}: ${energy[lk]}</div>
+      <div class="synth-badge">${labels.confLabel}: ${conf[lk]}</div>
     </div>
   `;
   area.style.display = 'block';
