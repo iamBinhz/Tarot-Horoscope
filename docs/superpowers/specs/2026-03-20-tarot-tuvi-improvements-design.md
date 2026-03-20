@@ -1,7 +1,7 @@
 # Design Spec: Tarot & Tu Vi System Improvements
 
 **Date:** 2026-03-20
-**Status:** Draft
+**Status:** Reviewed (spec review passed, pending user approval)
 **Scope:** Parallel improvements to tarot-example.html and natal_chart.html
 
 ---
@@ -35,7 +35,13 @@ Two research documents ("Bao Cao Chi Tiet Ve Tarot" and "Bao Cao Tu Vi Kinh Dich
 { id:0, name:"The Fool", ..., meaning:"New beginnings, innocence...", reversed:"Recklessness, fear of the unknown, holding back..." }
 ```
 
-**Mechanic:** When dealing, each card gets a `isReversed` boolean (50% chance). Reversed cards display upside-down (CSS `transform: rotate(180deg)` on the card face) and use the `reversed` meaning instead of `meaning`.
+**Mechanic:** When dealing, each card gets a `isReversed` boolean (50% chance). Reversed cards use the `reversed` meaning instead of `meaning`.
+
+**Visual treatment of reversed cards:** Since card faces are text-based (symbol + name + keywords), rotating the entire face 180deg would make text unreadable. Instead:
+- The card **back** shows an inverted indicator (rotated symbol or "R" badge) during the face-down phase
+- On flip, the card front renders normally (right-side-up text) but with a visual reversed indicator: a small inverted arrow icon next to the card name, and the card border/glow changes from gold to a muted purple/silver
+- The reading panel clearly labels "(Reversed)" / "(Ngược)" next to the card name
+- This keeps text readable while clearly communicating the reversed state
 
 **Data volume:** 78 reversed meanings (English) + 78 Vietnamese translations = 156 new text entries.
 
@@ -140,17 +146,44 @@ const CARD_INTERACTIONS = [
     en: "The fire of action (Wands) meets the water of emotion (Cups) — passion must now be tempered with feeling.",
     vi: "Lửa hành động (Gậy) gặp nước cảm xúc (Cốc)..."
   },
-  // Number progression
+  // Number progression — uses function for dynamic text
   {
     condition: (a, b) => a.arcana === "minor" && b.arcana === "minor" && b.num > a.num,
-    en: `The energy escalates from ${a.num} to ${b.num} — this situation is intensifying.`,
-    vi: `Năng lượng tăng từ ${a.num} lên ${b.num}...`
+    text: (a, b) => ({
+      en: `The energy escalates from ${a.num} to ${b.num} — this situation is intensifying.`,
+      vi: `Năng lượng tăng từ ${a.num} lên ${b.num} — tình huống đang leo thang.`
+    })
   },
   // ... ~36 more patterns
 ];
+// Note: entries with static text use {en, vi} strings.
+// Entries needing card data use text(a,b) functions returning {en, vi}.
 ```
 
-**Fallback:** If no specific pattern matches, use a generic suit-element transition template: "[Element A] energy transitions to [Element B] — [transition meaning]."
+**Fallback templates:** If no specific pattern matches, use element-transition templates. These are critical to quality since ~40 patterns cannot cover all 6084 possible pairs:
+
+```js
+const ELEMENT_TRANSITIONS = {
+  'fire→water': {
+    en: "Fiery momentum gives way to emotional depth — action must now yield to feeling.",
+    vi: "Đà lửa nhường chỗ cho chiều sâu cảm xúc — hành động giờ phải nhường chỗ cho cảm nhận."
+  },
+  'fire→earth': {
+    en: "Creative fire seeks grounding — inspiration wants to become something tangible.",
+    vi: "Lửa sáng tạo tìm kiếm nền tảng — cảm hứng muốn trở thành hiện thực."
+  },
+  'fire→air': {
+    en: "Passion meets intellect — act on what you believe, but think it through.",
+    vi: "Đam mê gặp trí tuệ — hãy hành động theo niềm tin, nhưng suy nghĩ kỹ."
+  },
+  // ... all 12 element pairs (4×3) + major→minor, minor→major transitions
+  'spirit→any': {
+    en: "A cosmic force channels into everyday reality — pay attention to how this manifests in your daily life.",
+    vi: "Lực lượng vũ trụ đi vào thực tại hàng ngày — hãy chú ý cách nó biểu hiện."
+  }
+};
+// Additional fallback: same-suit progression, same-number echo, court card transitions
+```
 
 ### 1.6 Question-Model Framing
 
@@ -158,12 +191,14 @@ const CARD_INTERACTIONS = [
 
 **Change:** Before shuffling, user selects one of three question models (or "General" for no framing):
 
-1. **Problem Analysis** — "What is blocking me?" → Interpretation lens emphasizes obstacles, root causes, and what needs attention.
-2. **Solution/Action** — "What should I do?" → Lens emphasizes guidance, recommended actions, and resources available.
-3. **Crossroads** — "Which path should I take?" → Lens emphasizes comparison, trade-offs, and timing.
-4. **General** — No framing applied (current default behavior).
+| Model | English | Vietnamese | Lens |
+|-------|---------|------------|------|
+| Problem Analysis | "What is blocking me?" | "Phân Tích Vấn Đề" | Obstacles, root causes, what needs attention |
+| Solution/Action | "What should I do?" | "Giải Pháp / Hành Động" | Guidance, recommended actions, resources available |
+| Crossroads | "Which path should I take?" | "Ngã Rẽ Cuộc Đời" | Comparison, trade-offs, timing |
+| General | (default) | "Tổng Quát" | No specific framing applied |
 
-**UI:** A row of 4 buttons below the "Shuffle" button. Selected model highlighted with gold border. Default is "General."
+**UI:** A row of 4 buttons below the "Shuffle" button. Labels switch with the bilingual toggle. Selected model highlighted with gold border. Default is "General" / "Tổng Quát".
 
 **Impact on synthesis:** The question model affects:
 - The opening line of the conclusion
@@ -237,6 +272,38 @@ Example (Vietnamese):
 
 ## Track 2: Tu Vi System (natal_chart.html)
 
+### 2.0 Gregorian-to-Lunar Calendar Conversion (Prerequisite)
+
+**Current state:** The form collects Gregorian dates (`<input type="date">`) and uses `d.getDate()` (Gregorian day) directly. Tu Vi Dau So requires lunar calendar dates (lunar day, lunar month, lunar year) for all calculations.
+
+**Change:** Implement a Gregorian-to-Vietnamese-lunar conversion algorithm.
+
+**Approach: Built-in lookup table (no external APIs).**
+
+The Vietnamese lunar calendar is based on astronomical observations with leap month adjustments. A practical approach for a client-side app:
+
+1. **Precomputed lunar data table** covering years 1900-2100. Each year entry stores:
+   - Leap month index (0 = no leap month, 1-12 = which month is repeated)
+   - 12-13 bit flags for month lengths (29 or 30 days per month)
+   - This is a well-known dataset (~200 entries, ~3 lines per entry compressed)
+
+2. **Conversion function:**
+```js
+function gregorianToLunar(year, month, day) {
+  // Uses the precomputed LUNAR_DATA table
+  // Returns { lunarYear, lunarMonth, lunarDay, isLeapMonth }
+  // Algorithm: count days from a known epoch, walk through lunar months
+}
+```
+
+3. **Known dataset source:** The "Vietnamese/Chinese lunar calendar" lookup tables are widely used in Tu Vi software. The compressed format is ~400 lines of hex data.
+
+**UX change:** After the user enters a Gregorian date, the form displays the converted lunar date below the input for transparency: "Âm lịch: Ngày 15 tháng 2 năm Bính Ngọ"
+
+**Edge case: Invalid conversions.** If a Gregorian date falls outside the supported range (pre-1900 or post-2100), display a warning and offer manual lunar date input as a fallback.
+
+**Alternative input:** Add a checkbox "Tôi biết ngày âm lịch" / "I know my lunar birthday" that reveals manual lunar date fields (lunar day, lunar month, lunar year, is leap month). This bypasses conversion entirely and is more accurate for users who know their lunar birth date.
+
 ### 2.1 Deterministic Star Placement
 
 **Current state:** Main stars distributed by Fisher-Yates shuffle with seeded RNG. Only Tử Vi uses day-based position `(day-1)%12`, Thiên Phủ = `(12 - tuViPos)%12`.
@@ -245,7 +312,14 @@ Example (Vietnamese):
 
 #### Step 1: Tử Vi Position Lookup
 
-Tử Vi's position is determined by **lunar day** and **Cục** (derived from Nạp Âm of birth year):
+Tử Vi's position is determined by **lunar day** and **Cục** (derived from the combination of Mệnh cung's Earthly Branch Ngũ Hành and the birth year's Thiên Can):
+
+**Cục derivation (corrected):** The Cục is determined by the Nạp Âm Ngũ Hành of the combination of the **Thiên Can of the birth year** and the **Địa Chi of the Mệnh cung**, NOT simply from the birth year's Nạp Âm. The steps are:
+1. Get the Thiên Can of the birth year
+2. Get the Địa Chi of the Mệnh cung (computed from lunar month + birth hour)
+3. Combine this Thiên Can + Địa Chi pair → look up in Nạp Âm table → get Ngũ Hành → map to Cục
+
+This corrects the current oversimplification where Cục comes directly from the birth year's Nạp Âm.
 
 | Cục | Value |
 |-----|-------|
@@ -317,6 +391,34 @@ Auxiliary stars have their own placement rules based on various inputs:
 
 Each gets a lookup table or formula. ~30 auxiliary stars total, each with a deterministic rule.
 
+#### Step 4: Tràng Sinh Cycle Placement
+
+**Current state:** Tràng Sinh starting position is randomly assigned (`Math.floor(rng() * 12)`).
+
+**Change:** The Tràng Sinh (twelve life phases) cycle starting position is determined by the **Cục's Ngũ Hành** and the **Mệnh cung's Địa Chi**, with direction (clockwise/counterclockwise) determined by **Âm/Dương** of the chart (based on birth year + gender):
+
+```js
+// Starting palace for Tràng Sinh based on Cục element
+const TRANG_SINH_START = {
+  'Thủy': 8,  // Thân
+  'Mộc': 2,   // Dần (Hợi for some schools)
+  'Kim': 5,   // Tỵ
+  'Thổ': 8,   // Thân
+  'Hỏa': 2,   // Dần
+};
+
+// 12 phases in order
+const TRANG_SINH_PHASES = [
+  'Trường Sinh', 'Mộc Dục', 'Quan Đới', 'Lâm Quan', 'Đế Vượng', 'Suy',
+  'Bệnh', 'Tử', 'Mộ', 'Tuyệt', 'Thai', 'Dưỡng'
+];
+
+// Direction: Dương (male born in yang year, female born in yin year) = clockwise
+// Âm (male born in yin year, female born in yang year) = counterclockwise
+```
+
+The 12 phases distribute from the starting palace in the determined direction, one per branch.
+
 ### 2.2 Tứ Hóa by Thiên Can
 
 **Current state:** Randomly assigned to 4 stars.
@@ -337,6 +439,9 @@ const TU_HOA_TABLE = {
   'Nhâm': ['Thiên Lương', 'Tử Vi', 'Tả Phụ', 'Vũ Khúc'],
   'Quý':  ['Phá Quân', 'Cự Môn', 'Thái Âm', 'Tham Lang'],
 };
+// Source: Northern school (Bắc Phái) convention. Some Southern school
+// sources differ on select entries (e.g., Giáp Hóa Lộc → Lộc Tồn).
+// This spec follows Bắc Phái as referenced in the research document.
 ```
 
 ### 2.3 Star Brightness System
@@ -412,7 +517,21 @@ function interpretPalace(palace, stars, hoaMap, tuanTriet) {
 }
 ```
 
-**Data requirement:** `PALACE_STAR_MEANINGS` — 12 palaces × 14 main stars = 168 base interpretation entries (Vietnamese primary + English). This is the largest data component.
+**Empty palaces:** Some palaces may have no main stars after deterministic placement — this is normal and meaningful in Tu Vi. An empty palace is interpreted through:
+1. Its Tràng Sinh phase (which is always present)
+2. Any auxiliary stars present
+3. The "borrowed star" concept: an empty Mệnh palace borrows from the opposite palace (Thiên Di)
+4. The palace element itself and its Ngũ Hành relationship with the chart's Cục
+
+```js
+function interpretEmptyPalace(palace, trangSinhPhase, auxStars, oppositePalaceStars) {
+  // Tràng Sinh phase gives the baseline energy
+  // Auxiliary stars modify it
+  // For Mệnh specifically, borrow main star interpretation from Thiên Di
+}
+```
+
+**Data requirement:** `PALACE_STAR_MEANINGS` — 12 palaces × 14 main stars = 168 base interpretation entries (Vietnamese primary + English). This is the largest data component. Realistic estimate: ~1000-1400 lines at 3-4 lines per entry.
 
 ### 2.5 Ngũ Hành Sinh Khắc Analysis
 
@@ -541,7 +660,53 @@ function interpretDaiHan(daiHanPalace, natalChart, currentAge) {
 
 No more random selection. Every piece of guidance traces back to the chart.
 
-### 2.10 Communication Style (Tu Vi)
+### 2.10 Tổng Luận (Overall Synthesis)
+
+**Current state:** No overall synthesis exists. Individual palace interpretations are not connected.
+
+**Change:** Add a synthesis section (paralleling the Tarot system's synthesis engine) that weaves together:
+
+```
+┌─────────────────────────────────────────────┐
+│  ✦ TỔNG LUẬN LÁ SỐ / CHART SYNTHESIS ✦     │
+│                                             │
+│  [Classical Opening - 2-3 sentences]        │
+│  Chart identity: Cục, Mệnh palace, dominant │
+│  stars, overall energy.                     │
+│                                             │
+│  ── Cách Cục Chủ Đạo ──                   │
+│  [Dominant Pattern - 2-3 sentences]         │
+│  Named Cách Cục + meaning. If multiple      │
+│  patterns found, rank by significance.      │
+│                                             │
+│  ── Tứ Hóa Tác Động ──                    │
+│  [Transformation Analysis - 3-4 sentences]  │
+│  How the 4 Hóa interact with the chart.     │
+│  Especially Hóa Lộc (fortune source) and    │
+│  Hóa Kỵ (challenge area).                  │
+│                                             │
+│  ── Đại Hạn Hiện Tại ──                   │
+│  [Current Period - 2-3 sentences]           │
+│  What the current 10-year period means.     │
+│  Ngũ Hành interaction with natal chart.     │
+│                                             │
+│  ── Lời Khuyên ──                          │
+│  [Actionable Guidance - 2-3 items]          │
+│  Based on Mệnh + current Đại Hạn + Tứ Hóa.│
+│  Framed as "conditional determinism."       │
+│                                             │
+│  ⚡ Mệnh Cách: [label based on dominant    │
+│     pattern — e.g., Văn/Võ/Tài/Phúc]       │
+└─────────────────────────────────────────────┘
+```
+
+### 2.11 Age Calculation Fix
+
+**Current state:** Age computed as `currentYear - year` (approximate, ignores birth month).
+
+**Change:** Use proper age calculation: `Math.floor((currentDate - birthDate) / (365.25 * 86400000))`. This matters for Tuần/Triệt age-based weighting (threshold at 30) and determining the current Đại Hạn period.
+
+### 2.12 Communication Style (Tu Vi)
 
 Vietnamese-primary with blend voice adapted for Tu Vi's more scholarly tradition:
 
@@ -573,7 +738,12 @@ Example:
 | Cách Cục patterns | 25-30 patterns × 2 lang | Condition + meaning |
 | Đại Hạn templates | 12 palaces × 2 lang | Period interpretations |
 
-**Total estimated new code:** ~3,000-4,000 lines across both files.
+| Lunar calendar data | ~200 year entries | Compressed hex format |
+| Tràng Sinh tables | 5 elements × 12 phases | Starting positions + phase names |
+| Empty palace templates | 12 palaces × 2 lang | Fallback for starless palaces |
+| Tổng Luận templates | ~20 fragments × 2 lang | Synthesis text |
+
+**Revised total estimate:** ~4,500-6,000 lines across both files (each file growing to ~3,400-4,200 lines). The palace×star meanings table alone accounts for ~1,000-1,400 lines.
 
 ---
 
@@ -586,7 +756,7 @@ Example:
 - Page structure and HTML layout
 - Bilingual toggle mechanism (body.lang-vi class)
 - Google Fonts CDN loading
-- Single-file architecture (no external data files)
+- Single-file architecture (however, a separate `tuvi-data.js` loaded via `<script src>` is acceptable if natal_chart.html exceeds ~4000 lines, since this still works offline with direct file opening)
 
 ---
 
@@ -594,18 +764,41 @@ Example:
 
 **Tarot:**
 - Every card has both upright and reversed meanings
-- Reversed cards visually display upside-down
+- Reversed cards display with visual indicator (inverted arrow + color shift), text remains readable
 - Conclusion contains: mystical opening, narrative arc, element analysis, actionable steps
 - Question model selection affects interpretation framing
 - Adjacent cards are analyzed for narrative connections
 - Reading feels cohesive, not like 3 isolated card descriptions
 
 **Tu Vi:**
+- Gregorian dates correctly convert to lunar dates (verify against known lunar calendars)
 - Same birth data always produces the same chart (deterministic)
 - Star positions match reference calculations for known test cases
 - Tứ Hóa correctly determined by Thiên Can
-- All 12 palaces have interpretations
+- All 12 palaces have interpretations (including empty palaces)
 - Star brightness uses proper lookup, not hash
+- Tràng Sinh cycle placed deterministically by Cục element
 - Đại Hạn periods are interpreted with current period highlighted
 - Tuần/Triệt effects visible in interpretation
+- Tổng Luận synthesis section connects all analysis threads
 - Reading provides chart-based (not random) guidance
+
+---
+
+## Validation Test Cases
+
+To verify Tu Vi calculation correctness, the implementation must produce correct results for these reference cases (to be validated against established Tu Vi software):
+
+**Test Case 1:** Male, born 1990-02-06 (Gregorian), Giờ Dần (3-5 AM)
+- Lunar: Canh Ngọ year, tháng Giêng, ngày 11
+- Expected: Thiên Can = Canh, Tứ Hóa = [Thái Dương/Lộc, Vũ Khúc/Quyền, Thái Âm/Khoa, Thiên Đồng/Kỵ]
+
+**Test Case 2:** Female, born 2000-08-15 (Gregorian), Giờ Ngọ (11AM-1PM)
+- Lunar: Canh Thìn year
+- Expected: Thiên Can = Canh, same Tứ Hóa as above but different Mệnh/Thân cung
+
+**Test Case 3:** Male, born 1985-03-18 (Gregorian), Giờ Tý (11PM-1AM)
+- Lunar: Ất Sửu year
+- Expected: Thiên Can = Ất, Tứ Hóa = [Thiên Cơ/Lộc, Thiên Lương/Quyền, Tử Vi/Khoa, Thái Âm/Kỵ]
+
+Full star positions for each test case to be verified against reference Tu Vi software (e.g., tuvi.vn or laso.vn) during implementation.
