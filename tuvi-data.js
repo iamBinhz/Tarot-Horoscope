@@ -262,21 +262,8 @@ function getTrangSinhCycle(element, canIdx, gender) {
 // 7. CUC_VALUES and CUC_MAP
 // =============================================================================
 
-const CUC_VALUES = {
-  'Thủy': 2,
-  'Mộc':  3,
-  'Kim':  4,
-  'Thổ':  5,
-  'Hỏa':  6,
-};
-
-const CUC_MAP = {
-  'Thủy': 'Thủy Nhị Cục',
-  'Mộc':  'Mộc Tam Cục',
-  'Kim':  'Kim Tứ Cục',
-  'Thổ':  'Thổ Ngũ Cục',
-  'Hỏa':  'Hỏa Lục Cục',
-};
+// CUC_VALUES and CUC_MAP are defined in natal_chart.html's inline script.
+// Do NOT redeclare them here — const/var redeclaration across <script> tags causes SyntaxError.
 
 // =============================================================================
 // 8. Ngũ Hành cycles and branch elements
@@ -346,8 +333,8 @@ const NGU_HANH_EFFECTS = {
 // Additional reference arrays used throughout the system
 // =============================================================================
 
-// Heavenly Stems (Thiên Can), index 0-9
-const THIEN_CAN = ['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'];
+// THIEN_CAN is defined in natal_chart.html's inline script.
+// Do NOT redeclare here — const/var redeclaration across <script> tags causes SyntaxError.
 
 // Earthly Branches (Địa Chi), index 0-11
 const DIA_CHI = ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];

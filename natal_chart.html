@@ -722,6 +722,38 @@ function computeThanCung(lunarMonth, hourIdx) {
   return (2 + lunarMonth - 1 + hourIdx) % 12;
 }
 
+/* ── Derive Cục from (year Thiên Can + Mệnh cung Địa Chi) ── */
+function deriveCuc(canIdx, menhBranchIdx) {
+  // Traditional Tu Vi: pair year's Thiên Can with Mệnh cung's Địa Chi
+  // to find the Nạp Âm of that pair, then derive Cục from its Ngũ Hành.
+
+  // Step 1: Can and Chi must have same parity for a valid sexagenary pair
+  let adjustedCan = canIdx;
+  if ((canIdx % 2) !== (menhBranchIdx % 2)) {
+    // Different parity — use next Can (standard adjustment)
+    adjustedCan = (canIdx + 1) % 10;
+  }
+
+  // Step 2: Compute the 60-cycle (Giáp Tý) index for this (Can, Chi) pair
+  // The sexagenary cycle index: ((can - chi) * 6 + chi) mapped to 0-59
+  // Simplified: each Nạp Âm covers 2 consecutive sexagenary entries
+  // napAmPairIdx gives us which Nạp Âm group (0-29)
+  const napAmPairIdx = ((adjustedCan % 10) * 6 + Math.floor(menhBranchIdx / 2)) % 30;
+
+  // Step 3: Each Nạp Âm covers 2 entries in NAP_AM_TABLE
+  const napAmForCuc = NAP_AM_TABLE[napAmPairIdx * 2];
+  const cucHanh = getNapAmHanh(napAmForCuc);
+
+  // Step 4: Map element to Cục value
+  const cucValueMap = {Thủy: 2, Mộc: 3, Kim: 4, Thổ: 5, Hỏa: 6};
+  const cucValue = cucValueMap[cucHanh];
+  const cuc = CUC_MAP[cucHanh];
+
+  console.log(`[deriveCuc] Can=${THIEN_CAN[canIdx]}(${canIdx}), adjustedCan=${THIEN_CAN[adjustedCan]}(${adjustedCan}), menhBranch=${menhBranchIdx}, napAmIdx=${napAmPairIdx*2}, napAm=${napAmForCuc}, hanh=${cucHanh}, cuc=${cuc}(${cucValue})`);
+
+  return { cuc, cucValue, hanh: cucHanh };
+}
+
 /* Get star brightness using lookup table from tuvi-data.js, fallback to hash */
 function getStarBrightness(starName, branchIdx) {
   if (typeof STAR_BRIGHTNESS_TABLE !== 'undefined' && STAR_BRIGHTNESS_TABLE[starName]) {
@@ -811,20 +843,21 @@ function generateChart(name, dateStr, hour, gender) {
   const thienCan = THIEN_CAN[canIdx];
   const diaChi = BRANCHES[chiIdx].vi;
 
-  /* ── Step 2: Nạp Âm & Cục ── */
+  /* ── Step 2: Year Nạp Âm (for display) ── */
   const napAmIdx = ((lunarYear - 4) % 60 + 60) % 60;
   const napAm = NAP_AM_TABLE[napAmIdx] || 'Hải Trung Kim';
-  const menhHanh = getNapAmHanh(napAm);
-
-  // Cục derivation: use CUC_VALUES from tuvi-data.js if available
-  const cuc = CUC_MAP[menhHanh];
-  const cucValue = (typeof CUC_VALUES !== 'undefined') ? CUC_VALUES[menhHanh] : ({Kim:4,Mộc:3,Thủy:2,Hỏa:6,Thổ:5})[menhHanh];
 
   const amDuong = canIdx % 2 === 0 ? 'Dương' : 'Âm';
 
-  /* ── Step 3: Mệnh & Thân positions ── */
+  /* ── Step 3: Mệnh & Thân positions (MUST be before Cục) ── */
   const menhPos = computeMenhCung(lunarMonth, hour);
   const thanPos = computeThanCung(lunarMonth, hour);
+
+  /* ── Step 2b: Cục derivation from (year Can + Mệnh branch) ── */
+  const cucInfo = deriveCuc(canIdx, menhPos);
+  const menhHanh = cucInfo.hanh;
+  const cuc = cucInfo.cuc;
+  const cucValue = cucInfo.cucValue;
 
   /* ── Step 4: Build palace grid ── */
   const palaceData = [];
@@ -940,18 +973,36 @@ function generateChart(name, dateStr, hour, gender) {
   }
 
   /* ── Step 9: Tứ Hóa (deterministic from Thiên Can) ── */
+  console.log(`[TuHoa] TU_HOA_TABLE loaded: ${typeof TU_HOA_TABLE !== 'undefined'}, canIdx: ${canIdx}`);
   if (typeof TU_HOA_TABLE !== 'undefined' && TU_HOA_TABLE[canIdx]) {
     const hoaStars = TU_HOA_TABLE[canIdx];
+    console.log(`[TuHoa] Using deterministic table for ${THIEN_CAN[canIdx]}:`, hoaStars);
     hoaStars.forEach((starName, hoaIdx) => {
       // Find which palace this star sits in
+      let found = false;
       for (const p of palaceData) {
         if (p.mainStars.includes(starName)) {
           p.hoa.push({ star: starName, type: HOA_TYPES[hoaIdx] });
+          console.log(`[TuHoa] ${HOA_TYPES[hoaIdx].label}: ${starName} → palace ${p.vi} (branch ${p.branchIdx})`);
+          found = true;
           break;
+        }
+      }
+      if (!found) {
+        console.warn(`[TuHoa] ⚠️ ${HOA_TYPES[hoaIdx].label}: ${starName} NOT FOUND in any palace mainStars!`);
+        // Check if it's in aux stars instead
+        for (const p of palaceData) {
+          if (p.auxStars.includes(starName)) {
+            p.hoa.push({ star: starName, type: HOA_TYPES[hoaIdx] });
+            console.log(`[TuHoa] ${HOA_TYPES[hoaIdx].label}: ${starName} → found in AUX stars of ${p.vi}`);
+            found = true;
+            break;
+          }
         }
       }
     });
   } else {
+    console.warn(`[TuHoa] ⚠️ FALLBACK: Using random hash-based Tứ Hóa!`);
     // Fallback: hash-based
     const rng = mulberry32(seedHash(name + dateStr + hour + gender));
     const allMainInPalaces = [];

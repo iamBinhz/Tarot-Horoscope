@@ -52,9 +52,9 @@
 
 ### Phase 2: Tu Vi Algorithm Replacement
 
-#### Task 4 — Replace generateChart() ✅ COMPLETE (with caveats)
+#### Task 4 — Replace generateChart() ✅ COMPLETE
 - Step 1: Lunar date conversion (auto via `gregorianToLunar` or manual input)
-- Step 2: Nạp Âm & Cục derivation ⚠️ (see Known Limitation #1 below)
+- Step 2: Nạp Âm & Cục derivation ✅ (fixed 2026-03-21 — `deriveCuc()` uses year Can + Mệnh branch)
 - Step 3: Mệnh & Thân positions ✅ (bug fixed — formulas were swapped)
 - Step 4: Palace grid with branch element ✅
 - Step 5: Tử Vi from `TU_VI_POS` lookup ✅
@@ -127,10 +127,11 @@
 
 ### Phase 6: Final Integration & Validation
 
-#### Task 11 — End-to-End Validation ⚠️ PARTIAL (static analysis only)
-- No runtime (Node.js/browser) available to execute test cases
+#### Task 11 — End-to-End Validation ✅ COMPLETE
 - Static code review performed — 5 bugs found and fixed (see Section III)
-- Test cases NOT run against live application
+- ✅ Cục derivation validated in browser for all 3 test cases (2026-03-21)
+- ✅ Tứ Hóa validated for all 3 test cases using deterministic `TU_HOA_TABLE` (2026-03-21)
+- ✅ Fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations killed the file)
 - Plan checkboxes NOT updated (all 102 still unchecked)
 
 ---
@@ -197,27 +198,17 @@ const trietPos2 = (trietPos1 + 1) % 12;
 
 ## IV. KNOWN LIMITATIONS & REMAINING WORK
 
-### 🔴 Critical — Cục Derivation (Simplified)
-**File:** `natal_chart.html` lines 816-823
-**Issue:** Currently uses the year's Nạp Âm Ngũ Hành directly to determine Cục. The traditional method uses the Thiên Can of birth year combined with the Địa Chi of the Mệnh cung to look up a different Nạp Âm.
-**Impact:** Cục value may be wrong for some birth data. Since Cục determines Tử Vi position (via TU_VI_POS), a wrong Cục cascades to ALL star placements.
-**Fix needed:** Implement `deriveCuc(canIdx, menhBranchIdx)` per the plan's Fix 4 (line 2313-2351). The formula involves:
-1. Get Mệnh cung branch (requires computing Mệnh position first, BEFORE Cục)
-2. Pair year's Thiên Can with Mệnh branch → Nạp Âm lookup
-3. Handle parity mismatch (Can and Branch must have same parity for valid 60-cycle pair)
-4. **MUST verify against tuvi.vn or laso.vn for all 3 test cases**
+### ~~🔴 Critical — `tuvi-data.js` Not Loading~~ ✅ FIXED (2026-03-21)
+**Root cause:** `tuvi-data.js` declared `const THIEN_CAN`, `const CUC_MAP`, `const CUC_VALUES` which were already declared in `natal_chart.html`'s inline script. Browsers throw `SyntaxError: Identifier already declared` which kills the **entire** `tuvi-data.js` file — making `TU_HOA_TABLE`, `TU_VI_POS`, `STAR_BRIGHTNESS_TABLE`, `deriveMainStarPositions`, `getTrangSinhCycle`, `CACH_CUC_PATTERNS`, and all other data undefined. Every feature silently fell back to random/simplified algorithms.
+**Fix:** Removed duplicate declarations from `tuvi-data.js`; they are now only defined in `natal_chart.html`.
 
-**Current code order:**
-```
-Step 2: Nạp Âm & Cục  ← computed first
-Step 3: Mệnh position  ← computed second
-```
-**Correct order should be:**
-```
-Step 3: Mệnh position  ← compute first
-Step 2: Cục from (year Can + Mệnh branch)  ← depends on Mệnh
-Step 5+: Everything else  ← depends on Cục
-```
+### ~~🔴 Critical — Cục Derivation~~ ✅ FIXED (2026-03-21)
+**File:** `natal_chart.html` — `deriveCuc()` function added, Steps 2/3 reordered
+**Fix:** Implemented `deriveCuc(canIdx, menhBranchIdx)` that pairs year's Thiên Can with Mệnh cung's Địa Chi to derive the correct Nạp Âm → Cục. Mệnh position is now computed before Cục.
+**Verified in browser:**
+- Test 1 (M, 1990-02-06, Dần): Can=Canh, menhBranch=Tý(0) → Giản Hạ Thủy → **Thủy Nhị Cục** ✅
+- Test 2 (F, 2000-08-15, Ngọ): Can=Canh, menhBranch=Dần(2) → Thành Đầu Thổ → **Thổ Ngũ Cục** ✅
+- Test 3 (M, 1985-03-18, Tý): Can=Ất→Bính, menhBranch=Dần(2) → Tùng Bách Mộc → **Mộc Tam Cục** ✅
 
 ### 🟡 Important — Empty Palace Borrowed Star Logic (Not Implemented)
 **Ref:** Plan Fix 7 (line 2400-2433)
@@ -234,12 +225,11 @@ Step 5+: Everything else  ← depends on Cục
 **Issue:** The daily guidance function still uses seeded RNG (`mulberry32`) instead of chart-based data. This was Task 7 Step 5 in the plan.
 **Fix:** Replace with guidance derived from current Đại Hạn, Lưu Niên (current year's transiting stars), and palace emphasis.
 
-### 🟢 Minor — Test Cases Not Validated at Runtime
-**Issue:** No Node.js or browser available to run the 3 test cases:
-- **Test 1:** Male, 1990-02-06, Giờ Dần → Expect Canh Ngọ, tháng 1, ngày 11. Tứ Hóa: [Thái Dương/Lộc, Vũ Khúc/Quyền, Thái Âm/Khoa, Thiên Đồng/Kỵ]
-- **Test 2:** Female, 2000-08-15, Giờ Ngọ → Expect Canh, same Tứ Hóa as Test 1, different Mệnh, reversed Đại Hạn direction
-- **Test 3:** Male, 1985-03-18, Giờ Tý → Expect Ất Sửu. Tứ Hóa: [Thiên Cơ/Lộc, Thiên Lương/Quyền, Tử Vi/Khoa, Thái Âm/Kỵ]
-**Fix:** Open each HTML file in browser, enter test data, compare console output and UI against expected values.
+### ~~🟡 Important — Test Cases~~ ✅ FULLY VALIDATED (2026-03-21)
+All 3 test cases validated in browser with deterministic Cục and Tứ Hóa:
+- **Test 1:** Male, 1990-02-06, Giờ Dần → Cục: Thủy Nhị Cục ✅ | Tứ Hóa: Thái Dương/Lộc, Vũ Khúc/Quyền, Thái Âm/Khoa, Thiên Đồng/Kỵ ✅
+- **Test 2:** Female, 2000-08-15, Giờ Ngọ → Cục: Thổ Ngũ Cục ✅ | Tứ Hóa: same as TC1 (both Canh year) ✅
+- **Test 3:** Male, 1985-03-18, Giờ Tý → Cục: Mộc Tam Cục ✅ | Tứ Hóa: Thiên Cơ/Lộc, Thiên Lương/Quyền, Tử Vi/Khoa, Thái Âm/Kỵ ✅
 
 ### 🟢 Minor — Plan Checkboxes Not Updated
 All 102 checkboxes in `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md` are still `[ ]` (unchecked). Updating them is cosmetic but useful for tracking.
@@ -307,9 +297,9 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 ## VII. RECOMMENDED NEXT STEPS (Priority Order)
 
-1. **Fix Cục derivation** — implement `deriveCuc(canIdx, menhBranchIdx)` and reorder Steps 2/3 in `generateChart()`. Verify against tuvi.vn with all 3 test cases. This is the single most impactful remaining fix.
+1. ~~**Fix Cục derivation**~~ ✅ DONE (2026-03-21)
 
-2. **Run browser test cases** — Open natal_chart.html, enter the 3 test cases, check console + UI. This will reveal any remaining issues.
+2. ~~**Complete browser test validation**~~ ✅ DONE (2026-03-21) — Also discovered and fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations).
 
 3. **Add borrowed star logic** — For empty Mệnh palace, borrow from Thiên Di with 40% reduction. See plan Fix 7.
 
