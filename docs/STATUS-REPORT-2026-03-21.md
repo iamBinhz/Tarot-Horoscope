@@ -310,3 +310,5 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 6. **Replace generateGuidance()** — Use chart-based data instead of seeded RNG.
 
 7. **Update plan checkboxes** — Mark completed steps in the plan file.
+
+8. **Translation Overhaul (Tử Vi System)** — Standardize single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), add English translations for core vocabulary, and remove hardcoded logic inside generators.
