@@ -210,10 +210,8 @@ const trietPos2 = (trietPos1 + 1) % 12;
 - Test 2 (F, 2000-08-15, Ngọ): Can=Canh, menhBranch=Dần(2) → Thành Đầu Thổ → **Thổ Ngũ Cục** ✅
 - Test 3 (M, 1985-03-18, Tý): Can=Ất→Bính, menhBranch=Dần(2) → Tùng Bách Mộc → **Mộc Tam Cục** ✅
 
-### 🟡 Important — Empty Palace Borrowed Star Logic (Not Implemented)
-**Ref:** Plan Fix 7 (line 2400-2433)
-**Issue:** When Mệnh cung has no main stars, traditional Tu Vi "borrows" stars from the opposite palace (Thiên Di, index 6). Currently the code shows `EMPTY_PALACE_MEANINGS` but does NOT apply the borrowed star interpretation with reduced effect (~40%).
-**Fix:** Add borrowed star logic in `generateInterpretations()` after the empty palace section. See plan Fix 7 for exact code.
+### ~~🟡 Important — Empty Palace Borrowed Star Logic~~ ✅ FIXED (2026-03-21)
+**Fix:** Implemented in `generateInterpretations()`. Empty Mệnh palace borrows star interpretations from Thiên Di (opposite palace, index 6) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
 
 ### 🟡 Important — Age-Based Tuần/Triệt Weighting (Not Implemented)
 **Ref:** Plan Fix 5 (line 2353-2383)
@@ -303,7 +301,7 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 3. ~~**Overhaul lunar date system**~~ ✅ DONE (2026-03-21) — Replaced broken LUNAR_INFO table with Ho Ngoc Duc's algorithm (TK19-TK22, 1800-2199). Verified: Oct 1 2005→28/08 ✅, Feb 9 2005 (Tet)→1/1 ✅, Feb 10 2024 (Tet)→1/1 ✅.
 
-4. **Add borrowed star logic** — For empty Mệnh palace, borrow from Thiên Di with 40% reduction. See plan Fix 7.
+4. ~~**Add borrowed star logic**~~ ✅ DONE (2026-03-21) — Empty Mệnh palace now borrows interpretations from Thiên Di (opposite palace) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
 
 5. **Add Tuần/Triệt age-weighted display** — Show void effects in palace interpretations with age-based strength. See plan Fix 5.
 

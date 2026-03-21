@@ -1209,6 +1209,37 @@ function generateInterpretations(chartData) {
           ? `Cung ${p.vi} không có chính tinh tọa thủ. Ảnh hưởng của cung này chủ yếu đến từ các sao phụ và các cung tam hợp.`
           : `Your ${p.en} palace has no main stars. Its influence comes primarily from auxiliary stars and trine palaces.`;
       }
+
+      // Borrowed star logic — empty Mệnh borrows from opposite palace (Thiên Di, idx 6)
+      if (p.palaceIdx === 0 && hasPSM) {
+        const thienDi = palaceData.find(pd => pd.palaceIdx === 6);
+        if (thienDi && thienDi.mainStars.length > 0) {
+          text += isVi
+            ? '<br><br><em>Mệnh vô chính diệu — mượn sao từ cung Thiên Di (đối cung):</em> '
+            : '<br><br><em>Empty Destiny — borrowing stars from Travel palace (opposite):</em> ';
+          thienDi.mainStars.forEach(starName => {
+            const psm = PALACE_STAR_MEANINGS['Mệnh'] && PALACE_STAR_MEANINGS['Mệnh'][starName];
+            if (psm) {
+              text += `<strong>${starName}</strong>: ${isVi ? psm.vi : psm.en} `;
+            } else if (meanings[starName]) {
+              text += `<strong>${starName}</strong>: ${meanings[starName]}. `;
+            }
+            text += isVi
+              ? '<em>(mượn — hiệu lực giảm ~40%)</em> '
+              : '<em>(borrowed — effect reduced ~40%)</em> ';
+          });
+        }
+      }
+      // Other empty palaces — Ngũ Hành interaction between Cục element and palace element
+      if (p.palaceIdx !== 0 && typeof analyzeNguHanh !== 'undefined' && typeof NGU_HANH_EFFECTS !== 'undefined') {
+        const rel = analyzeNguHanh(chartData.menhHanh, p.element);
+        if (rel && NGU_HANH_EFFECTS[rel]) {
+          const eff = NGU_HANH_EFFECTS[rel];
+          text += isVi
+            ? `<br><em>Ngũ Hành (Cục ${chartData.menhHanh} — Cung ${p.element}): ${eff.vi}</em>`
+            : `<br><em>Five Elements (Cục ${chartData.menhHanh} — Palace ${p.element}): ${eff.en}</em>`;
+        }
+      }
     }
 
     // Element interaction
