@@ -213,15 +213,11 @@ const trietPos2 = (trietPos1 + 1) % 12;
 ### ~~🟡 Important — Empty Palace Borrowed Star Logic~~ ✅ FIXED (2026-03-21)
 **Fix:** Implemented in `generateInterpretations()`. Empty Mệnh palace borrows star interpretations from Thiên Di (opposite palace, index 6) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
 
-### 🟡 Important — Age-Based Tuần/Triệt Weighting (Not Implemented)
-**Ref:** Plan Fix 5 (line 2353-2383)
-**Issue:** Tuần and Triệt effects should vary by age (Triệt stronger before 30, Tuần stronger after 30). Currently not displayed at all in interpretations.
-**Fix:** Add weighted text in `generateInterpretations()` based on user's current age.
+### ~~🟡 Important — Age-Based Tuần/Triệt Weighting~~ ✅ FIXED (2026-03-21)
+**Fix:** Tuần/Triệt interpretations now dynamically display the person's age and calculate the strength of the effect (mạnh/nhẹ OR strong/mild). Triệt loses its power after age 30, and Tuần gains power after age 30.
 
-### 🟡 Important — generateGuidance() Still Random
-**File:** `natal_chart.html` line 1308-1400+
-**Issue:** The daily guidance function still uses seeded RNG (`mulberry32`) instead of chart-based data. This was Task 7 Step 5 in the plan.
-**Fix:** Replace with guidance derived from current Đại Hạn, Lưu Niên (current year's transiting stars), and palace emphasis.
+### ~~🟡 Important — generateGuidance() Still Random~~ ✅ FIXED (2026-03-21)
+**Fix:** The daily guidance function was rewritten to completely eliminate randomness. "What You Should Do" and "What You Should Avoid" are now explicitly derived from the current Đại Hạn, Mệnh main and auxiliary stars, Tuần/Triệt, and Tứ Hóa assignment logic. Any <4 slots are deterministically filled using a chart+date hash.
 
 ### ~~🟡 Important — Test Cases~~ ✅ FULLY VALIDATED (2026-03-21)
 All 3 test cases validated in browser with deterministic Cục and Tứ Hóa:
@@ -303,10 +299,10 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 4. ~~**Add borrowed star logic**~~ ✅ DONE (2026-03-21) — Empty Mệnh palace now borrows interpretations from Thiên Di (opposite palace) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
 
-5. **Add Tuần/Triệt age-weighted display** — Show void effects in palace interpretations with age-based strength. See plan Fix 5.
+5. ~~**Add Tuần/Triệt age-weighted display**~~ ✅ DONE (2026-03-21) — Void effects in palace interpretations now display age-dependent strength (e.g. "strong effect at age X"). Copes with the spec logic: Triệt loses power >30, Tuần gains power >30.
 
-6. **Replace generateGuidance()** — Use chart-based data instead of seeded RNG.
+6. ~~**Replace generateGuidance()**~~ ✅ DONE (2026-03-21) — Replaced random selection with deterministic mapping of chart data (Mệnh stars, Đại Hạn, Tuần/Triệt, Hóa Kỵ) to specific guidance text.
 
 7. **Update plan checkboxes** — Mark completed steps in the plan file.
 
-8. **Translation Overhaul (Tử Vi System)** — Standardize single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), add English translations for core vocabulary, and remove hardcoded logic inside generators.
+8. ~~**Translation Overhaul (Tử Vi System)**~~ ✅ DONE (2026-03-21) — Standardized single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), added English translations for core vocabulary, and removed hardcoded logic inside generators.
