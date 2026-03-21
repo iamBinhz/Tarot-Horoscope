@@ -301,10 +301,12 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 2. ~~**Complete browser test validation**~~ ✅ DONE (2026-03-21) — Also discovered and fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations).
 
-3. **Add borrowed star logic** — For empty Mệnh palace, borrow from Thiên Di with 40% reduction. See plan Fix 7.
+3. ~~**Overhaul lunar date system**~~ ✅ DONE (2026-03-21) — Replaced broken LUNAR_INFO table with Ho Ngoc Duc's algorithm (TK19-TK22, 1800-2199). Verified: Oct 1 2005→28/08 ✅, Feb 9 2005 (Tet)→1/1 ✅, Feb 10 2024 (Tet)→1/1 ✅.
 
-4. **Add Tuần/Triệt age-weighted display** — Show void effects in palace interpretations with age-based strength. See plan Fix 5.
+4. **Add borrowed star logic** — For empty Mệnh palace, borrow from Thiên Di with 40% reduction. See plan Fix 7.
 
-5. **Replace generateGuidance()** — Use chart-based data instead of seeded RNG.
+5. **Add Tuần/Triệt age-weighted display** — Show void effects in palace interpretations with age-based strength. See plan Fix 5.
 
-6. **Update plan checkboxes** — Mark completed steps in the plan file.
+6. **Replace generateGuidance()** — Use chart-based data instead of seeded RNG.
+
+7. **Update plan checkboxes** — Mark completed steps in the plan file.

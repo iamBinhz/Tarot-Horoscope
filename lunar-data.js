@@ -1,207 +1,289 @@
 /**
  * lunar-data.js
- * Vietnamese / Chinese Lunar Calendar Conversion
+ * Vietnamese Lunar Calendar Conversion
  *
- * LUNAR_INFO: 201 entries covering years 1900–2100.
- * Each 32-bit value encodes:
- *   bits  3- 0 : leap month number (0 = no leap month)
- *   bits 15- 4 : month lengths for months 1-12
- *                (bit 4 = month 1 … bit 15 = month 12;  1 = 30 days, 0 = 29 days)
- *   bit     16 : leap-month length  (1 = 30 days, 0 = 29 days)
+ * Based on the algorithm by Hồ Ngọc Đức (http://come.to/duc)
+ * Original: amlich-hnd.js — Âm lịch Việt Nam, Version 0.8, © 2004
  *
- * This is the widely-used dataset from Chinese/Vietnamese lunar calendar
- * implementations (Perl "Astro::Lunar", JavaScript "lunar-calendar", etc.).
+ * Data tables (TK19–TK22) cover years 1800–2199.
+ * Each 24-bit value encodes:
+ *   bits 17+     : offset of Tết from Jan 1 (days)
+ *   bits  4–15   : month lengths for months 1–12
+ *                  (bit 4 = month 12, bit 15 = month 1; 1 = 30 days, 0 = 29 days)
+ *   bits  0– 3   : leap month number (0 = no leap month)
+ *   bit      16  : leap-month length (1 = 30 days, 0 = 29 days)
+ *
+ * Adapted to preserve the same API as the previous lunar-data.js:
+ *   gregorianToLunar(year, month, day)
+ *   formatLunarDate(lunar, lang)
  */
 
-const LUNAR_INFO = [
-  // 1900–1909
-  0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260,
-  0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
-  // 1910–1919
-  0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255,
-  0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
-  // 1920–1929
-  0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40,
-  0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
-  // 1930–1939
-  0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0,
-  0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
-  // 1940–1949
-  0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4,
-  0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
-  // 1950–1959
-  0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5d0,
-  0x14573, 0x052d0, 0x0a9a8, 0x0e950, 0x06aa0,
-  // 1960–1969
-  0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570,
-  0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
-  // 1970–1979
-  0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4,
-  0x0d250, 0x0d558, 0x0b540, 0x0b6a0, 0x195a6,
-  // 1980–1989
-  0x095b0, 0x049b0, 0x0a974, 0x0a4b0, 0x0b27a,
-  0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
-  // 1990–1999
-  0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50,
-  0x06aa0, 0x0a6b6, 0x056a0, 0x02b60, 0x09373,
-  // 2000–2009
-  0x092e0, 0x0c960, 0x0d954, 0x0d4a0, 0x0da50,
-  0x07552, 0x056a0, 0x0abb7, 0x025d0, 0x092d0,
-  // 2010–2019
-  0x0cab5, 0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50,
-  0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0,
-  // 2020–2029
-  0x0f930, 0x06952, 0x0f4a0, 0x0dd26, 0x0d4a0,  // 2020-2024 — 2023 has leap 2
-  0x0d640, 0x0eca0, 0x0de53, 0x055a0, 0x0a6a0,  // 2025-2029
-  // 2030–2039
-  0x0abb5, 0x04b60, 0x0aae0, 0x0a2e3, 0x0a2d0,
-  0x10955, 0x0b4a0, 0x0b550, 0x0dd25, 0x0ba50,  // 2038 correction
-  // 2040–2049
-  0x0d640, 0x055b0, 0x056a5, 0x09ad0, 0x04ae0,
-  0x0a9d4, 0x0a2d0, 0x0d150, 0x0f252, 0x0d520,
-  // 2050–2059
-  0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4,
-  0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0,
-  // 2060–2069
-  0x0ada2, 0x095b0, 0x14977, 0x04970, 0x0a4b0,
-  0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60,
-  // 2070–2079
-  0x09570, 0x052f2, 0x04970, 0x06566, 0x0d4a0,
-  0x0ea50, 0x06e95, 0x05ad0, 0x02b60, 0x186e3,
-  // 2080–2089
-  0x092e0, 0x1c8d7, 0x0c950, 0x0d4a0, 0x1d8a6,
-  0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0,
-  // 2090–2099
-  0x0d2b2, 0x0a950, 0x0b557, 0x06ca0, 0x0b550,
-  0x15355, 0x04da0, 0x0a5d0, 0x14573, 0x052d0,
-  // 2100
-  0x0a9a8
+// ===================================================================
+// Data Tables — Ho Ngoc Duc
+// ===================================================================
+
+/* Years 1800–1899 */
+const TK19 = [
+  0x30baa3, 0x56ab50, 0x422ba0, 0x2cab61, 0x52a370,
+  0x3c51e8, 0x60d160, 0x4ae4b0, 0x376926, 0x58daa0,
+  0x445b50, 0x3116d2, 0x562ae0, 0x3ea2e0, 0x28e2d2,
+  0x4ec950, 0x38d556, 0x5cb520, 0x46b690, 0x325da4,
+  0x5855d0, 0x4225d0, 0x2ca5b3, 0x52a2b0, 0x3da8b7,
+  0x60a950, 0x4ab4a0, 0x35b2a5, 0x5aad50, 0x4455b0,
+  0x302b74, 0x562570, 0x4052f9, 0x6452b0, 0x4e6950,
+  0x386d56, 0x5e5aa0, 0x46ab50, 0x3256d4, 0x584ae0,
+  0x42a570, 0x2d4553, 0x50d2a0, 0x3be8a7, 0x60d550,
+  0x4a5aa0, 0x34ada5, 0x5a95d0, 0x464ae0, 0x2eaab4,
+  0x54a4d0, 0x3ed2b8, 0x64b290, 0x4cb550, 0x385757,
+  0x5e2da0, 0x4895d0, 0x324d75, 0x5849b0, 0x42a4b0,
+  0x2da4b3, 0x506a90, 0x3aad98, 0x606b50, 0x4c2b60,
+  0x359365, 0x5a9370, 0x464970, 0x306964, 0x52e4a0,
+  0x3cea6a, 0x62da90, 0x4e5ad0, 0x392ad6, 0x5e2ae0,
+  0x4892e0, 0x32cad5, 0x56c950, 0x40d4a0, 0x2bd4a3,
+  0x50b690, 0x3a57a7, 0x6055b0, 0x4c25d0, 0x3695b5,
+  0x5a92b0, 0x44a950, 0x2ed954, 0x54b4a0, 0x3cb550,
+  0x286b52, 0x4e55b0, 0x3a2776, 0x5e2570, 0x4852b0,
+  0x32aaa5, 0x56e950, 0x406aa0, 0x2abaa3, 0x50ab50
 ];
 
-// -------------------------------------------------------------------
-// Helper: days in a normal lunar month (1-based month index)
-// -------------------------------------------------------------------
-function lunarMonthDays(yearInfo, month) {
-  // Bit 4 corresponds to month 1, bit 5 to month 2, …, bit 15 to month 12
-  return ((yearInfo >> (16 - month)) & 1) ? 30 : 29;
+/* Years 1900–1999 */
+const TK20 = [
+  0x3c4bd8, 0x624ae0, 0x4ca570, 0x3854d5, 0x5cd260,
+  0x44d950, 0x315554, 0x5656a0, 0x409ad0, 0x2a55d2,
+  0x504ae0, 0x3aa5b6, 0x60a4d0, 0x48d250, 0x33d255,
+  0x58b540, 0x42d6a0, 0x2cada2, 0x5295b0, 0x3f4977,
+  0x644970, 0x4ca4b0, 0x36b4b5, 0x5c6a50, 0x466d50,
+  0x312b54, 0x562b60, 0x409570, 0x2c52f2, 0x504970,
+  0x3a6566, 0x5ed4a0, 0x48ea50, 0x336a95, 0x585ad0,
+  0x442b60, 0x2f86e3, 0x5292e0, 0x3dc8d7, 0x62c950,
+  0x4cd4a0, 0x35d8a6, 0x5ab550, 0x4656a0, 0x31a5b4,
+  0x5625d0, 0x4092d0, 0x2ad2b2, 0x50a950, 0x38b557,
+  0x5e6ca0, 0x48b550, 0x355355, 0x584da0, 0x42a5b0,
+  0x2f4573, 0x5452b0, 0x3ca9a8, 0x60e950, 0x4c6aa0,
+  0x36aea6, 0x5aab50, 0x464b60, 0x30aae4, 0x56a570,
+  0x405260, 0x28f263, 0x4ed940, 0x38db47, 0x5cd6a0,
+  0x4896d0, 0x344dd5, 0x5a4ad0, 0x42a4d0, 0x2cd4b4,
+  0x52b250, 0x3cd558, 0x60b540, 0x4ab5a0, 0x3755a6,
+  0x5c95b0, 0x4649b0, 0x30a974, 0x56a4b0, 0x40aa50,
+  0x29aa52, 0x4e6d20, 0x39ad47, 0x5eab60, 0x489370,
+  0x344af5, 0x5a4970, 0x4464b0, 0x2c74a3, 0x50ea50,
+  0x3d6a58, 0x6256a0, 0x4aaad0, 0x3696d5, 0x5c92e0
+];
+
+/* Years 2000–2099 */
+const TK21 = [
+  0x46c960, 0x2ed954, 0x54d4a0, 0x3eda50, 0x2a7552,
+  0x4e56a0, 0x38a7a7, 0x5ea5d0, 0x4a92b0, 0x32aab5,
+  0x58a950, 0x42b4a0, 0x2cbaa4, 0x50ad50, 0x3c55d9,
+  0x624ba0, 0x4ca5b0, 0x375176, 0x5c5270, 0x466930,
+  0x307934, 0x546aa0, 0x3ead50, 0x2a5b52, 0x504b60,
+  0x38a6e6, 0x5ea4e0, 0x48d260, 0x32ea65, 0x56d520,
+  0x40daa0, 0x2d56a3, 0x5256d0, 0x3c4afb, 0x6249d0,
+  0x4ca4d0, 0x37d0b6, 0x5ab250, 0x44b520, 0x2edd25,
+  0x54b5a0, 0x3e55d0, 0x2a55b2, 0x5049b0, 0x3aa577,
+  0x5ea4b0, 0x48aa50, 0x33b255, 0x586d20, 0x40ad60,
+  0x2d4b63, 0x525370, 0x3e49e8, 0x60c970, 0x4c54b0,
+  0x3768a6, 0x5ada50, 0x445aa0, 0x2fa6a4, 0x54aad0,
+  0x4052e0, 0x28d2e3, 0x4ec950, 0x38d557, 0x5ed4a0,
+  0x46d950, 0x325d55, 0x5856a0, 0x42a6d0, 0x2c55d4,
+  0x5252b0, 0x3ca9b8, 0x62a930, 0x4ab490, 0x34b6a6,
+  0x5aad50, 0x4655a0, 0x2eab64, 0x54a570, 0x4052b0,
+  0x2ab173, 0x4e6930, 0x386b37, 0x5e6aa0, 0x48ad50,
+  0x332ad5, 0x582b60, 0x42a570, 0x2e52e4, 0x50d160,
+  0x3ae958, 0x60d520, 0x4ada90, 0x355aa6, 0x5a56d0,
+  0x462ae0, 0x30a9d4, 0x54a2d0, 0x3ed150, 0x28e952
+];
+
+/* Years 2100–2199 */
+const TK22 = [
+  0x4eb520, 0x38d727, 0x5eada0, 0x4a55b0, 0x362db5,
+  0x5a45b0, 0x44a2b0, 0x2eb2b4, 0x54a950, 0x3cb559,
+  0x626b20, 0x4cad50, 0x385766, 0x5c5370, 0x484570,
+  0x326574, 0x5852b0, 0x406950, 0x2a7953, 0x505aa0,
+  0x3baaa7, 0x5ea6d0, 0x4a4ae0, 0x35a2e5, 0x5aa550,
+  0x42d2a0, 0x2de2a4, 0x52d550, 0x3e5abb, 0x6256a0,
+  0x4c96d0, 0x3949b6, 0x5e4ab0, 0x46a8d0, 0x30d4b5,
+  0x56b290, 0x40b550, 0x2a6d52, 0x504da0, 0x3b9567,
+  0x609570, 0x4a49b0, 0x34a975, 0x5a64b0, 0x446a90,
+  0x2cba94, 0x526b50, 0x3e2b60, 0x28ab61, 0x4c9570,
+  0x384ae6, 0x5cd160, 0x46e4a0, 0x2eed25, 0x54da90,
+  0x405b50, 0x2c36d3, 0x502ae0, 0x3a93d7, 0x6092d0,
+  0x4ac950, 0x32d556, 0x58b4a0, 0x42b690, 0x2e5d94,
+  0x5255b0, 0x3e25fa, 0x6425b0, 0x4e92b0, 0x36aab6,
+  0x5c6950, 0x4674a0, 0x31b2a5, 0x54ad50, 0x4055a0,
+  0x2aab73, 0x522570, 0x3a5377, 0x6052b0, 0x4a6950,
+  0x346d56, 0x585aa0, 0x42ab50, 0x2e56d4, 0x544ae0,
+  0x3ca570, 0x2864d2, 0x4cd260, 0x36eaa6, 0x5ad550,
+  0x465aa0, 0x30ada5, 0x5695d0, 0x404ad0, 0x2aa9b3,
+  0x50a4d0, 0x3ad2b7, 0x5eb250, 0x48b540, 0x33d556
+];
+
+// ===================================================================
+// Core Algorithm
+// ===================================================================
+
+const PI = Math.PI;
+
+/**
+ * Julian Day Number from Gregorian date.
+ */
+function jdn(dd, mm, yy) {
+  const a = Math.floor((14 - mm) / 12);
+  const y = yy + 4800 - a;
+  const m = mm + 12 * a - 3;
+  return dd + Math.floor((153 * m + 2) / 5) +
+         365 * y + Math.floor(y / 4) -
+         Math.floor(y / 100) + Math.floor(y / 400) - 32045;
 }
 
-// -------------------------------------------------------------------
-// Helper: days in the leap month for this year
-// -------------------------------------------------------------------
-function leapMonthDays(yearInfo) {
-  return (yearInfo & 0x10000) ? 30 : 29;
+/**
+ * Convert Julian Day Number back to Gregorian [dd, mm, yyyy].
+ */
+function jdn2date(jd) {
+  let Z = jd, A, alpha, B, C, D, E, dd, mm, yyyy;
+  if (Z < 2299161) {
+    A = Z;
+  } else {
+    alpha = Math.floor((Z - 1867216.25) / 36524.25);
+    A = Z + 1 + alpha - Math.floor(alpha / 4);
+  }
+  B = A + 1524;
+  C = Math.floor((B - 122.1) / 365.25);
+  D = Math.floor(365.25 * C);
+  E = Math.floor((B - D) / 30.6001);
+  dd = Math.floor(B - D - Math.floor(30.6001 * E));
+  mm = E < 14 ? E - 1 : E - 13;
+  yyyy = mm < 3 ? C - 4715 : C - 4716;
+  return [dd, mm, yyyy];
 }
 
-// -------------------------------------------------------------------
-// Helper: total days in a lunar year
-// -------------------------------------------------------------------
-function lunarYearDays(yearInfo) {
-  let sum = 0;
-  for (let m = 1; m <= 12; m++) {
-    sum += lunarMonthDays(yearInfo, m);
+/**
+ * Decode the year info from a TK entry.
+ * Returns an array of LunarDate objects, one per month start.
+ */
+function decodeLunarYear(yy, k) {
+  const monthLengths = [29, 30];
+  const regularMonths = new Array(12);
+  const offsetOfTet = k >> 17;
+  const leapMonth = k & 0xf;
+  const leapMonthLength = monthLengths[(k >> 16) & 0x1];
+
+  const solarNY = jdn(1, 1, yy);
+  let currentJD = solarNY + offsetOfTet;
+
+  // Decode regular month lengths (bit 15 = month 1, bit 4 = month 12)
+  let j = k >> 4;
+  for (let i = 0; i < 12; i++) {
+    regularMonths[12 - i - 1] = monthLengths[j & 0x1];
+    j >>= 1;
   }
-  const leap = yearInfo & 0xf;
-  if (leap) {
-    sum += leapMonthDays(yearInfo);
+
+  const ly = [];
+
+  if (leapMonth === 0) {
+    // No leap month
+    for (let mm = 1; mm <= 12; mm++) {
+      ly.push({ day: 1, month: mm, year: yy, leap: 0, jd: currentJD });
+      currentJD += regularMonths[mm - 1];
+    }
+  } else {
+    // Has a leap month after month `leapMonth`
+    for (let mm = 1; mm <= leapMonth; mm++) {
+      ly.push({ day: 1, month: mm, year: yy, leap: 0, jd: currentJD });
+      currentJD += regularMonths[mm - 1];
+    }
+    // Insert the leap month
+    ly.push({ day: 1, month: leapMonth, year: yy, leap: 1, jd: currentJD });
+    currentJD += leapMonthLength;
+    for (let mm = leapMonth + 1; mm <= 12; mm++) {
+      ly.push({ day: 1, month: mm, year: yy, leap: 0, jd: currentJD });
+      currentJD += regularMonths[mm - 1];
+    }
   }
-  return sum;
+
+  return ly;
 }
 
-// -------------------------------------------------------------------
-// gregorianToLunar(year, month, day)
-//
-// Converts a Gregorian date to Vietnamese lunar date.
-// Epoch: Jan 31, 1900 = Lunar 1/1/1900 (day offset 0).
-//
-// Returns:
-//   { lunarYear, lunarMonth, lunarDay, isLeapMonth, canIdx, chiIdx }
-//
-//   canIdx  = (lunarYear - 4) % 10   → Heavenly Stem  (0=Giáp … 9=Quý)
-//   chiIdx  = (lunarYear - 4) % 12   → Earthly Branch (0=Tý  … 11=Hợi)
-// -------------------------------------------------------------------
-function gregorianToLunar(year, month, day) {
-  // ---- 1. Days from epoch to the given Gregorian date ----
-  function isLeapYear(y) {
-    return (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+/**
+ * Get the decoded lunar year info for a given year (1800–2199).
+ */
+function getYearInfo(yyyy) {
+  let yearCode;
+  if (yyyy < 1900) {
+    yearCode = TK19[yyyy - 1800];
+  } else if (yyyy < 2000) {
+    yearCode = TK20[yyyy - 1900];
+  } else if (yyyy < 2100) {
+    yearCode = TK21[yyyy - 2000];
+  } else {
+    yearCode = TK22[yyyy - 2100];
   }
-  function daysInGregorianMonth(y, m) {
-    return [0,31,isLeapYear(y)?29:28,31,30,31,30,31,31,30,31,30,31][m];
-  }
+  return decodeLunarYear(yyyy, yearCode);
+}
 
-  // Julian Day Number (integer days)
-  function julianDay(y, m, d) {
-    const a = Math.floor((14 - m) / 12);
-    const yy = y + 4800 - a;
-    const mm = m + 12 * a - 3;
-    return d + Math.floor((153 * mm + 2) / 5) +
-           365 * yy + Math.floor(yy / 4) -
-           Math.floor(yy / 100) + Math.floor(yy / 400) - 32045;
-  }
-
-  const EPOCH_JD = julianDay(1900, 1, 31); // Jan 31 1900 → lunar 1/1/1900
-  const targetJD = julianDay(year, month, day);
-  let offset = targetJD - EPOCH_JD;
-
-  if (offset < 0) {
-    // Out of range — return best-effort null
+/**
+ * Find the lunar date for a given Julian Day Number within a decoded lunar year.
+ */
+function findLunarDate(jd, ly) {
+  if (ly.length === 0 || ly[0].jd > jd) {
     return null;
   }
+  let i = ly.length - 1;
+  while (jd < ly[i].jd) {
+    i--;
+  }
+  const off = jd - ly[i].jd;
+  return {
+    day: ly[i].day + off,
+    month: ly[i].month,
+    year: ly[i].year,
+    leap: ly[i].leap,
+    jd: jd
+  };
+}
 
-  // ---- 2. Walk through lunar years from 1900 ----
-  let lunarYear = 1900;
-  let i = 0; // index into LUNAR_INFO
-  while (i < LUNAR_INFO.length) {
-    const daysInYear = lunarYearDays(LUNAR_INFO[i]);
-    if (offset < daysInYear) break;
-    offset -= daysInYear;
-    lunarYear++;
-    i++;
+// ===================================================================
+// Public API — same signatures as the previous lunar-data.js
+// ===================================================================
+
+/**
+ * gregorianToLunar(year, month, day)
+ *
+ * Converts a Gregorian date to Vietnamese lunar date.
+ * Supports years 1800–2199.
+ *
+ * Returns:
+ *   { lunarYear, lunarMonth, lunarDay, isLeapMonth, canIdx, chiIdx }
+ *
+ *   canIdx  = (lunarYear + 6) % 10  → Heavenly Stem  (0=Giáp … 9=Quý)
+ *   chiIdx  = (lunarYear + 8) % 12  → Earthly Branch (0=Tý  … 11=Hợi)
+ */
+function gregorianToLunar(year, month, day) {
+  if (year < 1800 || year > 2199) return null;
+
+  const jd = jdn(day, month, year);
+  let ly = getYearInfo(year);
+
+  // If the date is before Tet of this year, use previous year's info
+  if (jd < ly[0].jd) {
+    ly = getYearInfo(year - 1);
   }
 
-  if (i >= LUNAR_INFO.length) return null; // beyond 2100
+  const lunar = findLunarDate(jd, ly);
+  if (!lunar) return null;
 
-  // ---- 3. Walk through lunar months of this year ----
-  const info      = LUNAR_INFO[i];
-  const leapMonth = info & 0xf;       // 0 means no leap month
-  let   lunarMonth = 1;
-  let   isLeapMonth = false;
+  // Stem-Branch indices (matching Ho Ngoc Duc's formula)
+  const canIdx = (lunar.year + 6) % 10;
+  const chiIdx = (lunar.year + 8) % 12;
 
-  for (let m = 1; m <= 12; m++) {
-    // Normal month
-    const normalDays = lunarMonthDays(info, m);
-    if (offset < normalDays) {
-      lunarMonth  = m;
-      isLeapMonth = false;
-      break;
-    }
-    offset -= normalDays;
-
-    // Leap month immediately follows the normal month it duplicates
-    if (leapMonth === m) {
-      const leapDays = leapMonthDays(info);
-      if (offset < leapDays) {
-        lunarMonth  = m;
-        isLeapMonth = true;
-        break;
-      }
-      offset -= leapDays;
-    }
-
-    if (m === 12) {
-      // Should not normally reach here; treat as overflow
-      lunarMonth = 12;
-      isLeapMonth = false;
-    }
-  }
-
-  const lunarDay = offset + 1;
-
-  // ---- 4. Stem-Branch of the lunar year ----
-  const canIdx = ((lunarYear - 4) % 10 + 10) % 10;
-  const chiIdx = ((lunarYear - 4) % 12 + 12) % 12;
-
-  return { lunarYear, lunarMonth, lunarDay, isLeapMonth, canIdx, chiIdx };
+  return {
+    lunarYear: lunar.year,
+    lunarMonth: lunar.month,
+    lunarDay: lunar.day,
+    isLeapMonth: lunar.leap === 1,
+    canIdx: canIdx,
+    chiIdx: chiIdx
+  };
 }
 
 // -------------------------------------------------------------------
@@ -237,6 +319,5 @@ function formatLunarDate(lunar, lang) {
 // Expose as module if available, otherwise attach to window
 // -------------------------------------------------------------------
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { LUNAR_INFO, lunarMonthDays, leapMonthDays, lunarYearDays,
-                     gregorianToLunar, formatLunarDate };
+  module.exports = { gregorianToLunar, formatLunarDate, jdn, getYearInfo, findLunarDate };
 }
