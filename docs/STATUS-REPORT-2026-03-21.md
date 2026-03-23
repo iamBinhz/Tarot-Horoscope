@@ -135,6 +135,33 @@
 - ✅ Fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations killed the file)
 - Plan checkboxes NOT updated (all 102 still unchecked)
 
+### Phase 9: Tarot Analysis Quality Overhaul (PLANNED)
+
+#### Task 14 — Viết lại Card Meanings (DECK + DECK_VI) 🔴 PLANNED
+- 78 × 2 ngôn ngữ, cấu trúc: Tình huống → Ý nghĩa cốt lõi → Lời khuyên cụ thể
+- Loại bỏ ngôn ngữ mơ hồ, thay bằng tình huống thực tế
+
+#### Task 15 — Minor Arcana Position Interpretation 🔴 PLANNED
+- 56 lá × 3 vị trí × 2 ngôn ngữ = 336 entries mới (`MINOR_POSITION_INTERP`)
+- Thay thế `POSITION_FRAMES` prefix chung chung
+
+#### Task 16 — Nâng cấp Reading Synthesis 🟡 PLANNED
+- Narrative Arc nối 3 lá thành câu chuyện
+- Mở rộng CARD_INTERACTIONS (+40 patterns)
+- Element analysis sâu hơn, tích hợp reversed context
+
+#### Task 17 — Action Steps cụ thể theo context 🟡 PLANNED
+- 3-4 steps dựa trên Past/Present/Future card + question model
+- Mỗi step reference tên lá cụ thể
+
+#### Task 18 — Reflection Questions 🟢 PLANNED
+- 2-3 câu hỏi suy ngẫm cho mỗi lá bài (bilingual)
+- Giúp người đọc tự liên hệ với bài đọc
+
+#### Task 19 — Energy & Confidence Badges 🟢 PLANNED
+- Mô tả chi tiết hơn cho energy/confidence
+- Thêm "Reading Tone" badge mới
+
 ### Phase 7: UI/UX Modernization (PLANNED)
 
 #### Task 12 — Mobile & Tablet Responsive Overhaul 🔴 IMPORTANT
@@ -324,8 +351,9 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 8. ~~**Translation Overhaul (Tử Vi System)**~~ ✅ DONE (2026-03-21) — Standardized single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), added English translations for core vocabulary, and removed hardcoded logic inside generators.
 9. **Update master plan checkboxes** — Mark completed steps in the `2026-03-20-tarot-tuvi-improvements.md` file (102 items).
-10. **Plan Phase 7: Responsive Design Overhaul** (Not started)
-11. **Plan Phase 8: Authentication System** (Not started)
+10. **Phase 9: Tarot Analysis Quality Overhaul** (PLANNED — see Section X)
+11. **Plan Phase 7: Responsive Design Overhaul** (Not started)
+12. **Plan Phase 8: Authentication System** (Not started)
 
 ---
 
@@ -340,6 +368,135 @@ The following items are identified as uncompleted or requiring final verificatio
 | **Borrowed Star Text** | Logic | Ensure the Mệnh palace specifically includes the "effect reduced ~40%" string in English mode as per `Fix 7`. |
 | **Bilingual Leak Check** | UI/UX | Final crawl of both `tarot-example.html` and `natal_chart.html` to confirm **zero** hardcoded strings remain that do not respect the `currentLang` toggle. |
 | **Script Loading Error Handling** | Resilience | Implement `console.warn` or UI alerts if `tuvi-data.js` or `tarot-data.js` fail to load (important for local `file://` usage). |
+
+---
+
+## X. PHASE 9 — TAROT ANALYSIS QUALITY OVERHAUL (PLAN)
+
+> **Goal:** Nâng cấp toàn diện chất lượng phân tích bài đọc Tarot — từ mơ hồ, chung chung → rõ nghĩa, cụ thể, truyền đạt thông tin đầy đủ hơn.
+> **Priority:** HIGH
+> **Estimated scope:** tarot-data.js + tarot-example.html
+
+### Vấn đề hiện tại (Problems Identified)
+
+1. **Card meanings quá chung chung và mơ hồ** — Cả DECK (EN) lẫn DECK_VI (VI) đều viết theo kiểu "fortune cookie": đẹp nhưng không nói gì cụ thể. Ví dụ: *"Buông bỏ, và đột nhiên mọi thứ thay đổi"* — người đọc không hiểu buông bỏ cái gì, thay đổi ra sao.
+2. **Minor Arcana không có position interpretation riêng** — 56 lá Minor chỉ dùng `POSITION_FRAMES` prefix + meaning gốc → nghĩa là lặp lại ý giống nhau ở mọi vị trí (Past/Present/Future), không có sự khác biệt.
+3. **Reading Synthesis thiếu chiều sâu** — Thread section chỉ có ~32 interaction patterns → nhiều tổ hợp 3 lá sẽ rơi vào fallback chung chung. Element analysis quá đơn giản (chỉ đếm dominant/missing).
+4. **Action Steps quá generic** — Chỉ có 2 bước: 1 dựa trên future card, 1 dựa trên question model. Không liên kết với context cụ thể của trải bài.
+5. **Reversed meaning bị tách rời** — Hiển thị như một block riêng, không tích hợp vào narrative chính → người đọc phải tự ghép ý.
+6. **Không có relationship giữa 3 lá** — Mỗi lá được phân tích độc lập, không có narrative arc (câu chuyện) nối Past → Present → Future thành một hành trình.
+
+### Kế hoạch cải thiện (Improvement Tasks)
+
+#### Task 14 — Viết lại Card Meanings (DECK + DECK_VI) 🔴 HIGH
+**Scope:** 78 × 2 ngôn ngữ = 156 entries
+**Mục tiêu:**
+- Mỗi meaning dài hơn (3-4 câu thay vì 1-2), có cấu trúc: **Tình huống** → **Ý nghĩa cốt lõi** → **Lời khuyên cụ thể**
+- Tránh ngôn ngữ hoa mỹ trống rỗng ("ánh sáng nội tâm", "dòng chảy vũ trụ") — thay bằng tình huống thực tế
+- Mỗi meaning phải trả lời được: "Lá này nói CỤ THỂ gì về cuộc sống tôi?"
+- Vietnamese giữ card name tiếng Anh (đã có rule)
+
+**Ví dụ cải thiện:**
+```
+// TRƯỚC (mơ hồ):
+"Buông bỏ, và đột nhiên mọi thứ thay đổi."
+
+// SAU (cụ thể):
+"Bạn đang cố kiểm soát một tình huống mà sự kiểm soát không phải là câu trả lời.
+The Hanged Man xuất hiện khi bạn cần chủ động dừng lại — không phải vì bế tắc,
+mà vì góc nhìn hiện tại đang giới hạn bạn. Hãy thử đảo ngược cách tiếp cận:
+thay vì hỏi 'Làm sao để thắng?', hãy hỏi 'Tôi đang bỏ lỡ gì?'"
+```
+
+#### Task 15 — Thêm Position Interpretation cho Minor Arcana 🔴 HIGH
+**Scope:** 56 Minor × 3 positions × 2 ngôn ngữ = 336 entries mới trong `MINOR_POSITION_INTERP`
+**Mục tiêu:**
+- Mỗi lá Minor có ý nghĩa riêng biệt khi ở Past, Present, Future
+- Past: nói về sự kiện/bài học đã xảy ra cụ thể
+- Present: nói về năng lượng/thách thức đang diễn ra ngay bây giờ
+- Future: nói về xu hướng/khả năng sắp tới và cách chuẩn bị
+- `showReading()` sử dụng `MINOR_POSITION_INTERP` thay vì `POSITION_FRAMES` prefix
+
+**Cấu trúc data:**
+```js
+const MINOR_POSITION_INTERP = {
+  22: { // Ace of Wands
+    past: { en: "...", vi: "..." },
+    present: { en: "...", vi: "..." },
+    future: { en: "...", vi: "..." }
+  },
+  // ... 55 more
+};
+```
+
+#### Task 16 — Nâng cấp Reading Synthesis (generateConclusion) 🟡 MEDIUM
+**Scope:** Viết lại logic trong `generateConclusion()` + thêm data mới
+**Mục tiêu:**
+- **Narrative Arc**: Thêm section mới "The Story" — kết nối 3 lá thành một câu chuyện liền mạch (Past → Present → Future) thay vì phân tích từng lá riêng
+- **Deeper Thread**: Mở rộng `CARD_INTERACTIONS` thêm ~40 patterns bổ sung (hiện có ~32), tập trung vào:
+  - Court card ↔ Court card (power dynamics)
+  - Ace ↔ Ten (beginning ↔ completion)
+  - Same number across suits (repeated lessons)
+  - Major ↔ Minor interactions cụ thể hơn
+- **Richer Element Analysis**: Thay vì chỉ đếm dominant/missing, thêm:
+  - Element flow direction (fire→water = passion cooling into emotion)
+  - Element conflict (fire+water = inner tension between action and feeling)
+  - All-same-element reading (intensified but unbalanced)
+- **Integrated Reversed Context**: Nếu có lá reversed, synthesis phải nhắc đến reversed energy trong narrative, không chỉ hiện riêng
+
+#### Task 17 — Action Steps cụ thể theo context 🟡 MEDIUM
+**Scope:** Viết lại `generateActionSteps()` + thêm data
+**Mục tiêu:**
+- Tăng từ 2 → 3-4 action steps
+- Step 1: Dựa trên Past card → "Bài học cần ghi nhớ"
+- Step 2: Dựa trên Present card → "Hành động ngay bây giờ"
+- Step 3: Dựa trên Future card → "Chuẩn bị cho xu hướng sắp tới"
+- Step 4: Dựa trên question model → Lời khuyên tổng kết
+- Mỗi step reference tên lá bài cụ thể trong câu
+
+**Cấu trúc data mới:**
+```js
+const CARD_ACTION_TEMPLATES = {
+  0: { // The Fool
+    past_lesson: { en: "...", vi: "..." },
+    present_action: { en: "...", vi: "..." },
+    future_prep: { en: "...", vi: "..." }
+  },
+  // ... all 78 cards
+};
+```
+
+#### Task 18 — Thêm "Câu Hỏi Suy Ngẫm" (Reflection Questions) 🟢 LOW
+**Scope:** Thêm section mới trong reading panel
+**Mục tiêu:**
+- Mỗi lá bài có 2-3 câu hỏi suy ngẫm riêng (bilingual)
+- Hiển thị ở cuối mỗi card reading, dưới reversed meaning
+- Giúp người đọc tự liên hệ với bài đọc thay vì chỉ đọc thụ động
+
+**Ví dụ:**
+```
+The Hanged Man — Câu hỏi suy ngẫm:
+• Bạn đang cố kiểm soát điều gì mà thực ra cần buông bỏ?
+• Nếu đảo ngược góc nhìn về tình huống hiện tại, bạn sẽ thấy gì khác?
+```
+
+#### Task 19 — Cải thiện Energy & Confidence Badges 🟢 LOW
+**Scope:** Mở rộng `ENERGY_TYPES` và `CONFIDENCE_LEVELS` + logic
+**Mục tiêu:**
+- Thêm mô tả ngắn cho mỗi energy type (không chỉ 1 từ)
+- Confidence level giải thích TẠI SAO (ví dụ: "High — all three cards align and no reversals")
+- Thêm "Reading Tone" badge mới: Optimistic / Cautionary / Transformative / Contemplative
+
+### Thứ tự thực hiện đề xuất
+
+| Bước | Task | Lý do |
+|------|------|-------|
+| 1 | Task 14 (Card Meanings) | Nền tảng — mọi thứ khác dựa trên meaning chất lượng |
+| 2 | Task 15 (Minor Position Interp) | Khắc phục vấn đề lớn nhất: Minor Arcana lặp ý |
+| 3 | Task 16 (Synthesis Overhaul) | Kết nối tất cả thành narrative có chiều sâu |
+| 4 | Task 17 (Action Steps) | Biến phân tích thành lời khuyên hành động cụ thể |
+| 5 | Task 18 (Reflection Questions) | Tăng tương tác, giúp người đọc suy ngẫm |
+| 6 | Task 19 (Badges) | Polish cuối cùng |
 
 ---
 
