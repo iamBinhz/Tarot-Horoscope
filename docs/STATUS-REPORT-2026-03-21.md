@@ -1,4 +1,5 @@
 # Tarot & Tu Vi System — Status Report
+> **Last Updated:** 2026-03-23 (New Tasks Added)
 > **Date:** 2026-03-21
 > **Plan:** `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md`
 > **Total planned steps:** 102 (none checked off in plan file)
@@ -133,6 +134,22 @@
 - ✅ Tứ Hóa validated for all 3 test cases using deterministic `TU_HOA_TABLE` (2026-03-21)
 - ✅ Fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations killed the file)
 - Plan checkboxes NOT updated (all 102 still unchecked)
+
+### Phase 7: UI/UX Modernization (PLANNED)
+
+#### Task 12 — Mobile & Tablet Responsive Overhaul 🔴 IMPORTANT
+- Implement media queries for all viewports (Mobile, Tablet, Desktop)
+- Refactor `chart-grid` for small screens (scrollable or stacked view)
+- Responsive navigation menu and footer
+- Touch-friendly interactive elements
+
+### Phase 8: Authentication & Simple Database (PLANNED)
+
+#### Task 13 — User Account System 🔴 IMPORTANT
+- Centralized Login/Signup page
+- Persistent user sessions (Simple Database/LocalStorage-to-Server)
+- Top-right "Login/Signup" button added to `index.html`, `tarot-example.html`, and `natal_chart.html`
+- Call-to-action (CTA) logic: Suggest signup/login when a guest generates a Tarot or Natal reading to save their history
 
 ---
 
@@ -307,6 +324,8 @@ Draw cards → animateCards() → showReading() → generateConclusion()
 
 8. ~~**Translation Overhaul (Tử Vi System)**~~ ✅ DONE (2026-03-21) — Standardized single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), added English translations for core vocabulary, and removed hardcoded logic inside generators.
 9. **Update master plan checkboxes** — Mark completed steps in the `2026-03-20-tarot-tuvi-improvements.md` file (102 items).
+10. **Plan Phase 7: Responsive Design Overhaul** (Not started)
+11. **Plan Phase 8: Authentication System** (Not started)
 
 ---
 
