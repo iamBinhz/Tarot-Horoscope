@@ -1,507 +1,293 @@
-# Tarot & Tu Vi System — Status Report
-> **Last Updated:** 2026-03-23 (New Tasks Added)
-> **Date:** 2026-03-21
+# Tarot & Tử Vi System — Status Report
+> **Last Updated:** 2026-03-27
 > **Plan:** `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md`
-> **Total planned steps:** 102 (none checked off in plan file)
-> **Total lines of code (5 files):** 6,036
+> **Total lines of code (5 files):** 6,631
 
 ---
 
 ## I. FILE INVENTORY
 
-| File | Status | Lines | Role |
-|------|--------|-------|------|
-| `lunar-data.js` | **DONE** | 242 | Lunar calendar table (1900-2100), `gregorianToLunar()`, `formatLunarDate()` |
-| `tuvi-data.js` | **DONE** | 1,850 | All Tu Vi lookup tables + 5 interpretation data sections |
-| `tarot-data.js` | **DONE** | 1,047 | Reversed meanings, interactions, position frames, question models, energy/confidence |
-| `natal_chart.html` | **90% DONE** | 1,488 | Deterministic chart algo, 12-palace interp, Tổng Luận, bugs fixed |
-| `tarot-example.html` | **DONE** | 1,409 | Reversed mechanic, question model UI, synthesis engine |
+| File | Lines | Status | Role |
+|------|-------|--------|------|
+| `lunar-data.js` | 323 | **DONE** | Ho Ngoc Duc lunar calendar (1800–2199), `gregorianToLunar()`, `formatLunarDate()` |
+| `tuvi-data.js` | 1,837 | **DONE** | 25 data tables + functions: star positions, Tứ Hóa, Cách Cục (33 patterns), 168 palace×star meanings, Đại Hạn, Tổng Luận templates |
+| `tarot-data.js` | 1,335 | **DONE** | 16 data structures: reversed meanings (78), Major position interp (22×3), Minor position interp (56×3), interactions (32), elements, energy, confidence |
+| `natal_chart.html` | 1,717 | **DONE** | Full Tử Vi chart: deterministic algo, 12-palace interp, Tổng Luận, Cách Cục recognition, borrowed star logic |
+| `tarot-example.html` | 1,419 | **DONE** | Tarot reader: reversed mechanic, question model UI, synthesis engine, bilingual |
 
 ---
 
-## II. TASK-BY-TASK STATUS
+## II. COMPLETED TASKS
 
-### Phase 1: Tu Vi Data Infrastructure
+### Phase 1: Tử Vi Data Infrastructure
 
-#### Task 1 — lunar-data.js ✅ COMPLETE
-- LUNAR_INFO table: 201 entries (1900-2100), hex-encoded
-- `gregorianToLunar()`: epoch Jan 31 1900, Julian Day calculation, year/month walking
-- `formatLunarDate()`: bilingual output (VI/EN)
-- `lunarMonthDays()`, `leapMonthDays()`, `lunarYearDays()`: helper functions
-- Module export + window fallback
+#### Task 1 — lunar-data.js ✅
+- Ho Ngoc Duc algorithm (replaced old LUNAR_INFO table)
+- Year range: 1800–2199 via TK19/TK20/TK21/TK22 tables
+- `gregorianToLunar()`, `formatLunarDate()` (VI/EN), helpers
+- Verified: Oct 1 2005→28/08, Feb 9 2005 (Tết)→1/1, Feb 10 2024 (Tết)→1/1
 
-#### Task 2 — tuvi-data.js core tables ✅ COMPLETE
-- `TU_VI_POS`: Lookup table for Cục values 2-6, days 1-30
-- `deriveMainStarPositions(tuViPos)`: 14 main stars derived from Tử Vi
-- `AUX_BY_HOUR`: Văn Xương, Văn Khúc (12 hours each)
-- `AUX_BY_MONTH`: Tả Phụ, Hữu Bật (12 months each, 0-indexed)
-- `AUX_BY_CAN`: Thiên Khôi, Thiên Việt, Lộc Tồn, Kình Dương, Đà La (10 Can each)
-- `AUX_BY_CHI`: Thiên Mã, Hồng Loan, Thiên Hỉ (12 Chi each)
+#### Task 2 — tuvi-data.js core tables ✅
+- `TU_VI_POS`: Cục 2–6 × days 1–30 lookup
+- `deriveMainStarPositions()`: 14 main stars derived from Tử Vi
+- Auxiliary stars: `AUX_BY_HOUR`, `AUX_BY_MONTH`, `AUX_BY_CAN`, `AUX_BY_CHI`
 - `getHoaTinhPos()`, `getLinhTinhPos()`: special computation
-- `TU_HOA_TABLE`: 10 Thiên Can → 4 stars each
-- `STAR_BRIGHTNESS_TABLE`: 14 main stars × 12 branches
+- `TU_HOA_TABLE`: 10 Can → 4 stars each (deterministic)
+- `STAR_BRIGHTNESS_TABLE`: 14 stars × 12 branches
 - `getTrangSinhCycle()`: element + Can + gender → 12 phases
-- `CUC_VALUES`, `BRANCH_ELEMENT`, `SINH_CYCLE`, `KHAC_CYCLE`
-- `analyzeNguHanh()`, `NGU_HANH_EFFECTS`
+- `SINH_CYCLE`, `KHAC_CYCLE`, `BRANCH_ELEMENT`, `NGU_HANH_EFFECTS`
 
-#### Task 3 — tuvi-data.js interpretation data ✅ COMPLETE
-- `CACH_CUC_PATTERNS`: 33 pattern objects with condition functions, bilingual names + meanings, ratings
-- `PALACE_STAR_MEANINGS`: 12 palaces × 14 main stars (VI+EN)
+#### Task 3 — tuvi-data.js interpretation data ✅
+- `CACH_CUC_PATTERNS`: 33 patterns with condition functions (bilingual)
+- `PALACE_STAR_MEANINGS`: 12 palaces × 14 stars = 168 entries (VI+EN)
 - `DAI_HAN_MEANINGS`: 12 palace Đại Hạn templates (VI+EN)
 - `TONG_LUAN_TEMPLATES`: synthesis templates
 - `EMPTY_PALACE_MEANINGS`: 12 palaces (VI+EN)
 
-### Phase 2: Tu Vi Algorithm Replacement
+### Phase 2: Tử Vi Algorithm
 
-#### Task 4 — Replace generateChart() ✅ COMPLETE
-- Step 1: Lunar date conversion (auto via `gregorianToLunar` or manual input)
-- Step 2: Nạp Âm & Cục derivation ✅ (fixed 2026-03-21 — `deriveCuc()` uses year Can + Mệnh branch)
-- Step 3: Mệnh & Thân positions ✅ (bug fixed — formulas were swapped)
-- Step 4: Palace grid with branch element ✅
-- Step 5: Tử Vi from `TU_VI_POS` lookup ✅
-- Step 6: 14 main stars via `deriveMainStarPositions()` ✅
-- Step 7: Auxiliary stars (hour/month/Can/Chi + Hỏa/Linh Tinh) ✅ (month index bug fixed)
-- Step 8: Tràng Sinh via `getTrangSinhCycle()` ✅
-- Step 9: Tứ Hóa deterministic from `TU_HOA_TABLE[canIdx]` ✅
-- Step 10: Tuần & Triệt ✅ (both formulas were wrong, now fixed)
-- Step 11: Đại Hạn with starting age from cucValue, direction from Yang/Yin + gender ✅
+#### Task 4 — generateChart() ✅
+- Step 1: Lunar conversion (auto or manual input)
+- Step 2: Nạp Âm & Cục via `deriveCuc(canIdx, menhBranchIdx)`
+- Step 3: Mệnh `(2 + month - 1 - hour + 24) % 12` / Thân `(2 + month - 1 + hour) % 12` — formulas correct
+- Steps 4–9: Palace grid, Tử Vi placement, 14 main stars, auxiliaries, Tràng Sinh, Tứ Hóa
+- Step 10: Tuần `((chiIdx-canIdx)%12+12)%12` → +10,+11 / Triệt `(8 - 2*(canIdx%5) + 12) % 12` → +1
+- Step 11: Đại Hạn with starting age from Cục, direction from Dương/Âm + gender
 
-#### Task 5 — Manual Lunar Input & Display ✅ COMPLETE
-- Checkbox toggle + 3 fields (lunarMonth, lunarDay, lunarYear)
-- `toggleManualLunar()` function
-- `updateLunarPreview()` auto-shows lunar date when Gregorian date changes
-- Lunar date appended to chart subtitle
+#### Task 5 — Manual Lunar Input ✅
+- Checkbox toggle + 3 fields, `toggleManualLunar()`, `updateLunarPreview()`
 
-### Phase 3: Tu Vi Interpretation Engine
+### Phase 3: Tử Vi Interpretation
 
-#### Task 6 — Full 12-Palace Interpretation ✅ COMPLETE
-- `generateInterpretations()` covers all 12 palaces
-- Uses `PALACE_STAR_MEANINGS` when available, generic `STAR_MEANINGS`/`STAR_MEANINGS_VI` as fallback
-- Uses `EMPTY_PALACE_MEANINGS` for empty palaces
-- Ngũ Hành sinh/khắc analysis via `analyzeNguHanh()` + `NGU_HANH_EFFECTS`
+#### Task 6 — Full 12-Palace Interpretation ✅
+- `generateInterpretations()` uses `PALACE_STAR_MEANINGS`, `EMPTY_PALACE_MEANINGS`
+- Ngũ Hành sinh/khắc via `NGU_HANH_EFFECTS`
 - Tứ Hóa annotations per palace
-- Đại Hạn interpretation per palace via `DAI_HAN_MEANINGS`
-- `[Mệnh]` / `[Thân]` tags on palaces
+- Đại Hạn interpretation per palace
+- Empty Mệnh borrows from Thiên Di (opposite palace, ~40% reduced effect)
+- Tuần/Triệt age-weighted display (Triệt weakens >30, Tuần strengthens >30)
 
-#### Task 7 — Đại Hạn + Cách Cục + Tổng Luận ✅ COMPLETE
-- `generateTongLuan()` function implemented and wired into form submit
-- Cách Cục recognition using `CACH_CUC_PATTERNS` ✅ (argument passing bug fixed)
-- Tứ Hóa summary listing
-- Current Đại Hạn identification by age
-- Final advice paragraph
-- `tongluan-area` div shown after chart generation
+#### Task 7 — Tổng Luận + Cách Cục ✅
+- `generateTongLuan()` with `CACH_CUC_PATTERNS` (33 patterns, argument passing fixed)
+- Tứ Hóa summary, current Đại Hạn identification, final advice
+
+#### Task 8 — generateGuidance() ✅
+- Deterministic: chart data (Mệnh stars, Đại Hạn, Tuần/Triệt, Hóa Kỵ) → guidance
+- Seeded PRNG for remaining slots (chart+date hash) — reproducible daily
 
 ### Phase 4: Tarot Data Infrastructure
 
-#### Task 8 — tarot-data.js ✅ COMPLETE
-- `REVERSED_MEANINGS`: 78 cards (22 Major + 56 Minor), VI+EN
-- `MAJOR_POSITION_INTERP`: 22 Major Arcana × 3 positions (past/present/future), VI+EN
-- `POSITION_FRAMES`: 3 positions with prefix templates (VI+EN)
-- `SUIT_ELEMENT`: 4 suits → element mapping
-- `ELEMENT_NAMES`, `ELEMENT_DOMINANT`, `ELEMENT_MISSING`: element analysis templates
-- `CARD_INTERACTIONS`: 32+ patterns with conditions, VI+EN descriptions
-- `ELEMENT_TRANSITIONS`: fallback element-based interactions
-- `QUESTION_MODELS`, `QUESTION_MODEL_OPENINGS`: 4 models (general/problem/solution/crossroads)
-- `ENERGY_TYPES`: 5 types with icons
-- `CONFIDENCE_LEVELS`: 3 levels
-- `ARCANA_RATIO_TEXT`: major arcana count analysis
+#### Task 9 — tarot-data.js ✅
+- `REVERSED_MEANINGS`: 78 cards (VI+EN)
+- `MAJOR_POSITION_INTERP`: 22 Major × 3 positions (VI+EN)
+- `POSITION_FRAMES`: 3 positions with prefix templates (fallback for Minor)
+- `SUIT_ELEMENT`, `ELEMENT_NAMES`, `ELEMENT_DOMINANT`, `ELEMENT_MISSING`
+- `CARD_INTERACTIONS`: 32 patterns + `ELEMENT_TRANSITIONS` fallback
+- `QUESTION_MODELS` (4 types), `QUESTION_MODEL_OPENINGS`
+- `ENERGY_TYPES` (5), `CONFIDENCE_LEVELS` (3), `ARCANA_RATIO_TEXT`
 
 ### Phase 5: Tarot Algorithm & UI
 
-#### Task 9 — Reversed Card Mechanic + Question Model UI ✅ COMPLETE
-- 50% reversal probability on draw: `isReversed: Math.random() < 0.5`
-- `.reversed` CSS class with 180° rotation on card front
-- Reversed badge overlay (`↓ R`)
-- Question model button group (general/problem/solution/crossroads)
+#### Task 10 — Reversed Mechanic + Question Model UI ✅
+- 50% reversal probability, `.reversed` CSS class (180° rotation), badge overlay
+- Question model button group: general / problem / solution / crossroads
 - `selectQuestionModel()` with active state toggle
-- Position label updates based on model
-- CSS for `.r-reversed-meaning`, `.r-reversed-tag`
 
-#### Task 10 — Synthesis Engine ✅ COMPLETE
-- `getCardElement()`, `analyzeElements()`: element counting, dominant/missing
-- `findInteraction()`: searches `CARD_INTERACTIONS`, falls back to `ELEMENT_TRANSITIONS`
-- `determineEnergy()`, `determineConfidence()`: card-based analysis
-- `generateActionSteps()`: 2 steps based on future card + question model
-- `showReading()`: uses `MAJOR_POSITION_INTERP` for Major, `POSITION_FRAMES` for Minor, shows reversed meanings
-- `generateConclusion()`: multi-section synthesis (Opening, Thread, Elements, Path, Energy badge, Confidence badge)
-- CSS for `.synth-section`, `.synth-badges`, etc.
+#### Task 11 — Synthesis Engine ✅
+- `showReading()`: uses `MAJOR_POSITION_INTERP` for Major, `MINOR_POSITION_INTERP` for Minor, `POSITION_FRAMES` as fallback, shows reversed meanings
+- `generateConclusion()`: Opening → Thread → Elements → Path → Energy/Confidence badges
+- `analyzeElements()`, `findInteraction()`, `determineEnergy()`, `determineConfidence()`
+- `generateActionSteps()`: 2 steps (future card + question model based)
 
-### Phase 6: Final Integration & Validation
+### Phase 6: Validation & Bug Fixes
 
-#### Task 11 — End-to-End Validation ✅ COMPLETE
-- Static code review performed — 5 bugs found and fixed (see Section III)
-- ✅ Cục derivation validated in browser for all 3 test cases (2026-03-21)
-- ✅ Tứ Hóa validated for all 3 test cases using deterministic `TU_HOA_TABLE` (2026-03-21)
-- ✅ Fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations killed the file)
-- Plan checkboxes NOT updated (all 102 still unchecked)
+#### Task 12 — End-to-End Validation ✅
+- 5 critical bugs found and fixed (see Section IV)
+- 3 test cases validated in browser with deterministic Cục and Tứ Hóa
+- `tuvi-data.js` loading bug fixed (duplicate const declarations removed)
+- Translation overhaul: all data standardized to `{vi: ..., en: ...}` format
 
-### Phase 9: Tarot Analysis Quality Overhaul (PLANNED)
+### Phase 9: Tarot Analysis Quality (Partial)
 
-#### Task 14 — Viết lại Card Meanings (DECK + DECK_VI) 🔴 PLANNED
-- 78 × 2 ngôn ngữ, cấu trúc: Tình huống → Ý nghĩa cốt lõi → Lời khuyên cụ thể
-- Loại bỏ ngôn ngữ mơ hồ, thay bằng tình huống thực tế
+#### Task 14 — Viết lại Card Meanings ✅
+- 78 × 2 languages rewritten: 3–5 sentences per card
+- Structure: Tình huống → Ý nghĩa cốt lõi → Lời khuyên cụ thể
+- Verified: meanings are specific and actionable (not generic fortune-cookie style)
 
-#### Task 15 — Minor Arcana Position Interpretation 🔴 PLANNED
-- 56 lá × 3 vị trí × 2 ngôn ngữ = 336 entries mới (`MINOR_POSITION_INTERP`)
-- Thay thế `POSITION_FRAMES` prefix chung chung
+#### Task 15 — Minor Arcana Position Interpretation ✅
+- `MINOR_POSITION_INTERP`: 56 cards × 3 positions × 2 languages = 336 entries
+- `showReading()` now checks `MINOR_POSITION_INTERP` with typeof guard
+- `POSITION_FRAMES` prefix kept as fallback only
 
-#### Task 16 — Nâng cấp Reading Synthesis 🟡 PLANNED
-- Narrative Arc nối 3 lá thành câu chuyện
-- Mở rộng CARD_INTERACTIONS (+40 patterns)
-- Element analysis sâu hơn, tích hợp reversed context
+---
 
-#### Task 17 — Action Steps cụ thể theo context 🟡 PLANNED
-- 3-4 steps dựa trên Past/Present/Future card + question model
-- Mỗi step reference tên lá cụ thể
+## III. INCOMPLETE TASKS (Priority: High → Low)
 
-#### Task 18 — Reflection Questions 🟢 PLANNED
-- 2-3 câu hỏi suy ngẫm cho mỗi lá bài (bilingual)
-- Giúp người đọc tự liên hệ với bài đọc
+### 🔴 HIGH PRIORITY
 
-#### Task 19 — Energy & Confidence Badges 🟢 PLANNED
-- Mô tả chi tiết hơn cho energy/confidence
-- Thêm "Reading Tone" badge mới
+#### Task 16 — Nâng cấp Reading Synthesis `generateConclusion()` — PLANNED
+**Why:** "Sợi Chỉ Đỏ" (Thread) section only has 32 interaction patterns → many 3-card combos fall through to generic element fallback. No true narrative arc connecting Past→Present→Future as a story.
+**Scope:** `tarot-data.js` + `tarot-example.html`
+**Work needed:**
+- Add ~40 more `CARD_INTERACTIONS` patterns (Court↔Court, Ace↔Ten, same-number-across-suits, Major↔Minor specifics)
+- Add element flow analysis (fire→water = passion cooling) and element conflict detection
+- Integrate reversed card context into Thread narrative (currently reversed info is separate)
+- Add "The Story" section that reads as continuous narrative across 3 positions
 
-### Phase 7: UI/UX Modernization (PLANNED)
+#### Task 17 — Action Steps cụ thể theo context — PLANNED
+**Why:** Currently only 2 generic steps. Not linked to specific cards drawn.
+**Scope:** `tarot-data.js` + `tarot-example.html`
+**Work needed:**
+- Increase to 3–4 steps: Past lesson → Present action → Future preparation → Model-specific advice
+- Create `CARD_ACTION_TEMPLATES` (78 cards × 3 roles: past_lesson, present_action, future_prep)
+- Each step references the drawn card by name
 
-#### Task 12 — Mobile & Tablet Responsive Overhaul 🔴 IMPORTANT
-- Implement media queries for all viewports (Mobile, Tablet, Desktop)
-- Refactor `chart-grid` for small screens (scrollable or stacked view)
-- Responsive navigation menu and footer
+#### Task 18 — Reflection Questions — PLANNED
+**Why:** Readings are passive — user reads but doesn't engage. Reflection questions help users connect the reading to their life.
+**Scope:** `tarot-data.js` + `tarot-example.html`
+**Work needed:**
+- Add `REFLECTION_QUESTIONS`: 78 cards × 2–3 questions × 2 languages
+- Display below each card's reading section
+- Example: *"Bạn đang cố kiểm soát điều gì mà thực ra cần buông bỏ?"*
+
+#### Task 19 — Energy & Confidence Badge Improvements — PLANNED
+**Why:** Current badges are too terse (single word/icon). No explanation of why.
+**Scope:** `tarot-data.js` + `tarot-example.html`
+**Work needed:**
+- Add descriptions to each energy type (not just icon+label)
+- Confidence level shows reasoning (e.g., "High — cards aligned, no reversals")
+- Add "Reading Tone" badge: Optimistic / Cautionary / Transformative / Contemplative
+
+### 🟡 MEDIUM PRIORITY
+
+#### Task 13 — Mobile & Tablet Responsive Overhaul — PLANNED
+**Why:** Both `natal_chart.html` and `tarot-example.html` are desktop-only. Chart grid and tarot layout break on small screens.
+**Scope:** CSS media queries in both HTML files
+**Work needed:**
+- Media queries for mobile (<768px), tablet (768–1024px), desktop (>1024px)
+- Refactor `chart-grid` (12-palace grid) for small screens: scrollable or stacked
+- Responsive nav, footer, card display
 - Touch-friendly interactive elements
 
-### Phase 8: Authentication & Simple Database (PLANNED)
+#### Bilingual Leak Check — PENDING VERIFICATION
+**Why:** Card names (e.g., "The Tower") appear in English even in Vietnamese mode. Need full crawl.
+**Scope:** `tarot-example.html` + `natal_chart.html`
+**Known issue:** `tarot-example.html` line 1196–1201 uses `${futureCard.name}` (English) inside Vietnamese sentences
+**Note:** `natal_chart.html` appears clean — all text respects `currentLang`
 
-#### Task 13 — User Account System 🔴 IMPORTANT
+#### Script Loading Error Handling — PLANNED
+**Why:** Under `file://` protocol, external .js files can silently fail to load. All features fall back to simplified algorithms with no user warning.
+**Scope:** `tarot-example.html` + `natal_chart.html`
+**Work needed:**
+- Add `console.warn` or UI banner if `tuvi-data.js`, `tarot-data.js`, or `lunar-data.js` fail to load
+- Check: `if (typeof TU_VI_POS === 'undefined') showWarning('tuvi-data.js not loaded')`
+
+### 🟢 LOW PRIORITY
+
+#### User Account System — PLANNED
+**Why:** No persistence. Readings are lost on page close.
+**Scope:** New page + modifications to `index.html`, `tarot-example.html`, `natal_chart.html`
+**Work needed:**
 - Centralized Login/Signup page
-- Persistent user sessions (Simple Database/LocalStorage-to-Server)
-- Top-right "Login/Signup" button added to `index.html`, `tarot-example.html`, and `natal_chart.html`
-- Call-to-action (CTA) logic: Suggest signup/login when a guest generates a Tarot or Natal reading to save their history
+- Session persistence (LocalStorage or server-side)
+- "Login/Signup" button in top-right of all pages
+- CTA: suggest login after generating a reading to save history
+
+#### Master Plan Checkbox Sync — HOUSEKEEPING
+**Why:** All 102 checkboxes in `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md` are still `[ ]` despite ~95% completion.
+**Work needed:** Update checkboxes to reflect actual completion status.
 
 ---
 
-## III. BUGS FOUND & FIXED
+## IV. BUGS FOUND & FIXED (Historical)
 
-### Bug 1: Mệnh/Thân Formulas SWAPPED ❌→✅
-**File:** `natal_chart.html` line ~717-723
-**Impact:** CRITICAL — Every chart had wrong Mệnh and Thân palace positions
-**Was:**
-```js
-function computeMenhCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 + hourIdx) % 12;        // ← This is Thân formula!
-}
-function computeThanCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 + (12 - hourIdx)) % 12;  // ← This is Mệnh formula!
-}
-```
-**Fixed:**
-```js
-function computeMenhCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 - hourIdx + 24) % 12;    // Forward by month, BACKWARD by hour
-}
-function computeThanCung(lunarMonth, hourIdx) {
-  return (2 + lunarMonth - 1 + hourIdx) % 12;          // Forward by month, FORWARD by hour
-}
-```
-
-### Bug 2: Tuần Không Formula Wrong ❌→✅
-**File:** `natal_chart.html` line ~967
-**Impact:** CRITICAL — Tuần void positions wrong for most years
-**Was:** `(canIdx * 2 + 10) % 12` — only used canIdx, ignored chiIdx
-**Fixed:**
-```js
-const tuanStartChi = ((chiIdx - canIdx) % 12 + 12) % 12;
-const tuanPos1 = (tuanStartChi + 10) % 12;
-const tuanPos2 = (tuanStartChi + 11) % 12;
-```
-
-### Bug 3: Triệt Lộ Formula Wrong ❌→✅
-**File:** `natal_chart.html` line ~970
-**Impact:** CRITICAL — Triệt severance positions wrong for all years
-**Was:** `(canIdx * 2 + 2) % 12`
-**Fixed:**
-```js
-const trietPos1 = (8 - 2 * (canIdx % 5) + 12) % 12;
-const trietPos2 = (trietPos1 + 1) % 12;
-```
-**Lookup:** Giáp/Kỷ→Thân-Dậu(8,9), Ất/Canh→Ngọ-Mùi(6,7), Bính/Tân→Thìn-Tỵ(4,5), Đinh/Nhâm→Dần-Mão(2,3), Mậu/Quý→Tý-Sửu(0,1)
-
-### Bug 4: AUX_BY_MONTH Off-by-One ❌→✅
-**File:** `natal_chart.html` line ~893
-**Impact:** MEDIUM — Tả Phụ and Hữu Bật placed in wrong palaces; month 12 would get `undefined`
-**Was:** `positions[lunarMonth]` (1-based lunarMonth on 0-indexed array)
-**Fixed:** `positions[lunarMonth - 1]`
-
-### Bug 5: CACH_CUC_PATTERNS Argument Mismatch ❌→✅
-**File:** `natal_chart.html` line ~1252
-**Impact:** HIGH — All 33 Cách Cục patterns would NEVER match (silent failure)
-**Was:** `pattern.condition(palaceData, chartData)` — passing array where object expected
-**Fixed:** Built proper `starPositions`, `auxPositions`, `hoaMap` objects from palaceData before calling conditions. Also fixed `f.vi`/`f.en` → `f.meaning.vi`/`f.meaning.en`.
+| # | Bug | Severity | File | Fix |
+|---|-----|----------|------|-----|
+| 1 | Mệnh/Thân formulas swapped | CRITICAL | natal_chart.html | Mệnh backward by hour, Thân forward |
+| 2 | Tuần Không formula wrong (ignored chiIdx) | CRITICAL | natal_chart.html | `((chiIdx-canIdx)%12+12)%12` → +10, +11 |
+| 3 | Triệt Lộ formula wrong | CRITICAL | natal_chart.html | `(8 - 2*(canIdx%5) + 12) % 12` → +1 |
+| 4 | AUX_BY_MONTH off-by-one | MEDIUM | natal_chart.html | `positions[lunarMonth - 1]` |
+| 5 | CACH_CUC_PATTERNS argument mismatch | HIGH | natal_chart.html | Built proper starPositions/auxPositions/hoaMap objects |
+| 6 | tuvi-data.js duplicate const declarations | CRITICAL | tuvi-data.js | Removed duplicates; defined only in natal_chart.html |
+| 7 | Cục derivation missing | CRITICAL | natal_chart.html | Added `deriveCuc(canIdx, menhBranchIdx)` |
 
 ---
 
-## IV. KNOWN LIMITATIONS & REMAINING WORK
-
-### ~~🔴 Critical — `tuvi-data.js` Not Loading~~ ✅ FIXED (2026-03-21)
-**Root cause:** `tuvi-data.js` declared `const THIEN_CAN`, `const CUC_MAP`, `const CUC_VALUES` which were already declared in `natal_chart.html`'s inline script. Browsers throw `SyntaxError: Identifier already declared` which kills the **entire** `tuvi-data.js` file — making `TU_HOA_TABLE`, `TU_VI_POS`, `STAR_BRIGHTNESS_TABLE`, `deriveMainStarPositions`, `getTrangSinhCycle`, `CACH_CUC_PATTERNS`, and all other data undefined. Every feature silently fell back to random/simplified algorithms.
-**Fix:** Removed duplicate declarations from `tuvi-data.js`; they are now only defined in `natal_chart.html`.
-
-### ~~🔴 Critical — Cục Derivation~~ ✅ FIXED (2026-03-21)
-**File:** `natal_chart.html` — `deriveCuc()` function added, Steps 2/3 reordered
-**Fix:** Implemented `deriveCuc(canIdx, menhBranchIdx)` that pairs year's Thiên Can with Mệnh cung's Địa Chi to derive the correct Nạp Âm → Cục. Mệnh position is now computed before Cục.
-**Verified in browser:**
-- Test 1 (M, 1990-02-06, Dần): Can=Canh, menhBranch=Tý(0) → Giản Hạ Thủy → **Thủy Nhị Cục** ✅
-- Test 2 (F, 2000-08-15, Ngọ): Can=Canh, menhBranch=Dần(2) → Thành Đầu Thổ → **Thổ Ngũ Cục** ✅
-- Test 3 (M, 1985-03-18, Tý): Can=Ất→Bính, menhBranch=Dần(2) → Tùng Bách Mộc → **Mộc Tam Cục** ✅
-
-### ~~🟡 Important — Empty Palace Borrowed Star Logic~~ ✅ FIXED (2026-03-21)
-**Fix:** Implemented in `generateInterpretations()`. Empty Mệnh palace borrows star interpretations from Thiên Di (opposite palace, index 6) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
-
-### ~~🟡 Important — Age-Based Tuần/Triệt Weighting~~ ✅ FIXED (2026-03-21)
-**Fix:** Tuần/Triệt interpretations now dynamically display the person's age and calculate the strength of the effect (mạnh/nhẹ OR strong/mild). Triệt loses its power after age 30, and Tuần gains power after age 30.
-
-### ~~🟡 Important — generateGuidance() Still Random~~ ✅ FIXED (2026-03-21)
-**Fix:** The daily guidance function was rewritten to completely eliminate randomness. "What You Should Do" and "What You Should Avoid" are now explicitly derived from the current Đại Hạn, Mệnh main and auxiliary stars, Tuần/Triệt, and Tứ Hóa assignment logic. Any <4 slots are deterministically filled using a chart+date hash.
-
-### ~~🟡 Important — Test Cases~~ ✅ FULLY VALIDATED (2026-03-21)
-All 3 test cases validated in browser with deterministic Cục and Tứ Hóa:
-- **Test 1:** Male, 1990-02-06, Giờ Dần → Cục: Thủy Nhị Cục ✅ | Tứ Hóa: Thái Dương/Lộc, Vũ Khúc/Quyền, Thái Âm/Khoa, Thiên Đồng/Kỵ ✅
-- **Test 2:** Female, 2000-08-15, Giờ Ngọ → Cục: Thổ Ngũ Cục ✅ | Tứ Hóa: same as TC1 (both Canh year) ✅
-- **Test 3:** Male, 1985-03-18, Giờ Tý → Cục: Mộc Tam Cục ✅ | Tứ Hóa: Thiên Cơ/Lộc, Thiên Lương/Quyền, Tử Vi/Khoa, Thái Âm/Kỵ ✅
-
-### 🟢 Minor — Plan Checkboxes Not Updated
-All 102 checkboxes in `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md` are still `[ ]` (unchecked). Updating them is cosmetic but useful for tracking.
-
----
-
-## V. DATA QUALITY NOTES
-
-### tuvi-data.js — CACH_CUC_PATTERNS (33 patterns)
-- Helper functions (`areInTriangle`, `allInSameTriangle`, `allSame`, `flanking`) defined and used correctly
-- Pattern conditions reference star names matching `MAIN_STARS` array exactly
-- ⚠️ Some complex conditions may have edge cases not caught without runtime testing (e.g., patterns requiring specific Hóa positions or Mệnh branch alignment)
-
-### tuvi-data.js — PALACE_STAR_MEANINGS
-- Covers 12 palaces × 14 main stars = 168 entries
-- All entries have both `vi` and `en` keys
-- Content appears contextually appropriate (verified first 4 palaces, ~56 entries)
-
-### tarot-data.js — CARD_INTERACTIONS
-- 32+ patterns with condition functions checking card names/suits/arcana
-- Fallback to ELEMENT_TRANSITIONS when no specific pattern matches
-- All entries have both `vi` and `en` keys
-
-### lunar-data.js
-- Standard dataset matching Perl `Astro::Lunar` / JavaScript `lunar-calendar` implementations
-- Algorithm verified via static analysis (epoch calculation, year/month walking, stem-branch derivation)
-
----
-
-## VI. ARCHITECTURE NOTES FOR FUTURE DEVELOPERS
+## V. ARCHITECTURE REFERENCE
 
 ### Script Loading Order
 ```html
-<!-- End of natal_chart.html -->
-</script>                    ← Main inline script (defines functions)
-<script src="lunar-data.js"></script>   ← Loaded after inline script
-<script src="tuvi-data.js"></script>    ← Loaded after inline script
-</body>
-```
-All functions in the inline script use `typeof X !== 'undefined'` guards before accessing data from external files. This works because functions are only called on user interaction (form submit), which happens after all scripts have loaded. However, if a script fails to load (e.g., wrong path under `file://` protocol), the chart falls back to random/simplified algorithms silently.
+<!-- natal_chart.html -->
+</script>                         ← Inline script (defines all functions)
+<script src="lunar-data.js"></script>    ← Lunar calendar conversion
+<script src="tuvi-data.js"></script>     ← All Tử Vi data tables
 
-### Key Function Chain (natal_chart.html)
+<!-- tarot-example.html -->
+</script>                         ← Inline script (defines all functions)
+<script src="tarot-data.js"></script>    ← All Tarot data tables
 ```
-Form submit → generateChart() → renderChart() + generateGuidance()
-                                + generateInterpretations()
-                                + generateTongLuan()
-```
+All functions use `typeof X !== 'undefined'` guards. Scripts load after inline code but before user interaction.
 
-### Key Function Chain (tarot-example.html)
+### Function Chains
 ```
-Draw cards → animateCards() → showReading() → generateConclusion()
-                                                └─ analyzeElements()
-                                                └─ findInteraction()
-                                                └─ determineEnergy()
-                                                └─ determineConfidence()
-                                                └─ generateActionSteps()
+natal_chart.html:
+  Form submit → generateChart() → renderChart()
+                                 → generateInterpretations()
+                                 → generateTongLuan()
+                                 → generateGuidance()
+
+tarot-example.html:
+  Draw cards → animateCards() → showReading() → generateConclusion()
+                                                 ├─ analyzeElements()
+                                                 ├─ findInteraction()
+                                                 ├─ determineEnergy()
+                                                 ├─ determineConfidence()
+                                                 └─ generateActionSteps()
 ```
 
 ### Bilingual System
-- Both files use a `currentLang` variable (`'vi'` or `'en'`)
-- All data objects have `{vi: ..., en: ...}` structure
-- Language toggle re-renders interpretations dynamically
+- Global `currentLang` variable (`'vi'` or `'en'`)
+- All data objects: `{ vi: '...', en: '...' }`
+- Language toggle re-renders dynamically
+- Known issue: Tarot card names stay in English in Vietnamese mode
+
+### Data Table Summary
+| Table | Location | Size |
+|-------|----------|------|
+| `REVERSED_MEANINGS` | tarot-data.js:5 | 78 cards |
+| `MAJOR_POSITION_INTERP` | tarot-data.js:330 | 22 × 3 positions |
+| `MINOR_POSITION_INTERP` | tarot-data.js:642 | 56 × 3 positions |
+| `CARD_INTERACTIONS` | tarot-data.js:1015 | 32 patterns |
+| `ELEMENT_TRANSITIONS` | tarot-data.js:1190 | 20 transitions |
+| `TU_VI_POS` | tuvi-data.js:19 | 5 Cục × 30 days |
+| `TU_HOA_TABLE` | tuvi-data.js:186 | 10 Can × 4 stars |
+| `CACH_CUC_PATTERNS` | tuvi-data.js:420 | 33 patterns |
+| `PALACE_STAR_MEANINGS` | tuvi-data.js:945 | 12 × 14 = 168 entries |
+| `DAI_HAN_MEANINGS` | tuvi-data.js:1661 | 12 palaces |
+| `EMPTY_PALACE_MEANINGS` | tuvi-data.js:1782 | 12 palaces |
+
+### Test Cases (All Verified 2026-03-21)
+| Case | Input | Cục | Tứ Hóa |
+|------|-------|-----|--------|
+| 1 | Male, 1990-02-06, Dần | Thủy Nhị Cục ✅ | Thái Dương/Lộc, Vũ Khúc/Quyền, Thái Âm/Khoa, Thiên Đồng/Kỵ ✅ |
+| 2 | Female, 2000-08-15, Ngọ | Thổ Ngũ Cục ✅ | Same as TC1 (both Canh) ✅ |
+| 3 | Male, 1985-03-18, Tý | Mộc Tam Cục ✅ | Thiên Cơ/Lộc, Thiên Lương/Quyền, Tử Vi/Khoa, Thái Âm/Kỵ ✅ |
 
 ---
 
-## VII. RECOMMENDED NEXT STEPS (Priority Order)
+## VI. PROGRESS OVERVIEW
 
-1. ~~**Fix Cục derivation**~~ ✅ DONE (2026-03-21)
-
-2. ~~**Complete browser test validation**~~ ✅ DONE (2026-03-21) — Also discovered and fixed critical `tuvi-data.js` loading bug (duplicate `const` declarations).
-
-3. ~~**Overhaul lunar date system**~~ ✅ DONE (2026-03-21) — Replaced broken LUNAR_INFO table with Ho Ngoc Duc's algorithm (TK19-TK22, 1800-2199). Verified: Oct 1 2005→28/08 ✅, Feb 9 2005 (Tet)→1/1 ✅, Feb 10 2024 (Tet)→1/1 ✅.
-
-4. ~~**Add borrowed star logic**~~ ✅ DONE (2026-03-21) — Empty Mệnh palace now borrows interpretations from Thiên Di (opposite palace) with ~40% reduced effect. Other empty palaces show Ngũ Hành (Cục vs Palace element) interaction text.
-
-5. ~~**Add Tuần/Triệt age-weighted display**~~ ✅ DONE (2026-03-21) — Void effects in palace interpretations now display age-dependent strength (e.g. "strong effect at age X"). Copes with the spec logic: Triệt loses power >30, Tuần gains power >30.
-
-6. ~~**Replace generateGuidance()**~~ ✅ DONE (2026-03-21) — Replaced random selection with deterministic mapping of chart data (Mệnh stars, Đại Hạn, Tuần/Triệt, Hóa Kỵ) to specific guidance text.
-
-7. **Update plan checkboxes** — Mark completed steps in the plan file.
-
-8. ~~**Translation Overhaul (Tử Vi System)**~~ ✅ DONE (2026-03-21) — Standardized single-language arrays into dual-language format (e.g. `{vi: '', en: ''}`), added English translations for core vocabulary, and removed hardcoded logic inside generators.
-9. **Update master plan checkboxes** — Mark completed steps in the `2026-03-20-tarot-tuvi-improvements.md` file (102 items).
-10. **Phase 9: Tarot Analysis Quality Overhaul** (PLANNED — see Section X)
-11. **Plan Phase 7: Responsive Design Overhaul** (Not started)
-12. **Plan Phase 8: Authentication System** (Not started)
-
----
-
-## VIII. PENDING TASKS (LATE-STAGE REFINEMENTS)
-
-The following items are identified as uncompleted or requiring final verification based on the Master Plan Addendum and the most recent session's results:
-
-| Task | Category | Description |
-|------|----------|-------------|
-| **Master Plan Sync** | Housekeeping | Update all 102 checkboxes in `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md` to reflect current 95%+ completion status. |
-| **Test Case 2 Validation** | Verification | Perform official browser validation for Test Case 2 (Female, 2000-08-15, 12:00) to verify counter-clockwise Đại Hạn and Cục-Canh-based Tứ Hóa. |
-| **Borrowed Star Text** | Logic | Ensure the Mệnh palace specifically includes the "effect reduced ~40%" string in English mode as per `Fix 7`. |
-| **Bilingual Leak Check** | UI/UX | Final crawl of both `tarot-example.html` and `natal_chart.html` to confirm **zero** hardcoded strings remain that do not respect the `currentLang` toggle. |
-| **Script Loading Error Handling** | Resilience | Implement `console.warn` or UI alerts if `tuvi-data.js` or `tarot-data.js` fail to load (important for local `file://` usage). |
-
----
-
-## X. PHASE 9 — TAROT ANALYSIS QUALITY OVERHAUL (PLAN)
-
-> **Goal:** Nâng cấp toàn diện chất lượng phân tích bài đọc Tarot — từ mơ hồ, chung chung → rõ nghĩa, cụ thể, truyền đạt thông tin đầy đủ hơn.
-> **Priority:** HIGH
-> **Estimated scope:** tarot-data.js + tarot-example.html
-
-### Vấn đề hiện tại (Problems Identified)
-
-1. **Card meanings quá chung chung và mơ hồ** — Cả DECK (EN) lẫn DECK_VI (VI) đều viết theo kiểu "fortune cookie": đẹp nhưng không nói gì cụ thể. Ví dụ: *"Buông bỏ, và đột nhiên mọi thứ thay đổi"* — người đọc không hiểu buông bỏ cái gì, thay đổi ra sao.
-2. **Minor Arcana không có position interpretation riêng** — 56 lá Minor chỉ dùng `POSITION_FRAMES` prefix + meaning gốc → nghĩa là lặp lại ý giống nhau ở mọi vị trí (Past/Present/Future), không có sự khác biệt.
-3. **Reading Synthesis thiếu chiều sâu** — Thread section chỉ có ~32 interaction patterns → nhiều tổ hợp 3 lá sẽ rơi vào fallback chung chung. Element analysis quá đơn giản (chỉ đếm dominant/missing).
-4. **Action Steps quá generic** — Chỉ có 2 bước: 1 dựa trên future card, 1 dựa trên question model. Không liên kết với context cụ thể của trải bài.
-5. **Reversed meaning bị tách rời** — Hiển thị như một block riêng, không tích hợp vào narrative chính → người đọc phải tự ghép ý.
-6. **Không có relationship giữa 3 lá** — Mỗi lá được phân tích độc lập, không có narrative arc (câu chuyện) nối Past → Present → Future thành một hành trình.
-
-### Kế hoạch cải thiện (Improvement Tasks)
-
-#### Task 14 — Viết lại Card Meanings (DECK + DECK_VI) 🔴 HIGH
-**Scope:** 78 × 2 ngôn ngữ = 156 entries
-**Mục tiêu:**
-- Mỗi meaning dài hơn (3-4 câu thay vì 1-2), có cấu trúc: **Tình huống** → **Ý nghĩa cốt lõi** → **Lời khuyên cụ thể**
-- Tránh ngôn ngữ hoa mỹ trống rỗng ("ánh sáng nội tâm", "dòng chảy vũ trụ") — thay bằng tình huống thực tế
-- Mỗi meaning phải trả lời được: "Lá này nói CỤ THỂ gì về cuộc sống tôi?"
-- Vietnamese giữ card name tiếng Anh (đã có rule)
-
-**Ví dụ cải thiện:**
-```
-// TRƯỚC (mơ hồ):
-"Buông bỏ, và đột nhiên mọi thứ thay đổi."
-
-// SAU (cụ thể):
-"Bạn đang cố kiểm soát một tình huống mà sự kiểm soát không phải là câu trả lời.
-The Hanged Man xuất hiện khi bạn cần chủ động dừng lại — không phải vì bế tắc,
-mà vì góc nhìn hiện tại đang giới hạn bạn. Hãy thử đảo ngược cách tiếp cận:
-thay vì hỏi 'Làm sao để thắng?', hãy hỏi 'Tôi đang bỏ lỡ gì?'"
-```
-
-#### Task 15 — Thêm Position Interpretation cho Minor Arcana 🔴 HIGH
-**Scope:** 56 Minor × 3 positions × 2 ngôn ngữ = 336 entries mới trong `MINOR_POSITION_INTERP`
-**Mục tiêu:**
-- Mỗi lá Minor có ý nghĩa riêng biệt khi ở Past, Present, Future
-- Past: nói về sự kiện/bài học đã xảy ra cụ thể
-- Present: nói về năng lượng/thách thức đang diễn ra ngay bây giờ
-- Future: nói về xu hướng/khả năng sắp tới và cách chuẩn bị
-- `showReading()` sử dụng `MINOR_POSITION_INTERP` thay vì `POSITION_FRAMES` prefix
-
-**Cấu trúc data:**
-```js
-const MINOR_POSITION_INTERP = {
-  22: { // Ace of Wands
-    past: { en: "...", vi: "..." },
-    present: { en: "...", vi: "..." },
-    future: { en: "...", vi: "..." }
-  },
-  // ... 55 more
-};
-```
-
-#### Task 16 — Nâng cấp Reading Synthesis (generateConclusion) 🟡 MEDIUM
-**Scope:** Viết lại logic trong `generateConclusion()` + thêm data mới
-**Mục tiêu:**
-- **Narrative Arc**: Thêm section mới "The Story" — kết nối 3 lá thành một câu chuyện liền mạch (Past → Present → Future) thay vì phân tích từng lá riêng
-- **Deeper Thread**: Mở rộng `CARD_INTERACTIONS` thêm ~40 patterns bổ sung (hiện có ~32), tập trung vào:
-  - Court card ↔ Court card (power dynamics)
-  - Ace ↔ Ten (beginning ↔ completion)
-  - Same number across suits (repeated lessons)
-  - Major ↔ Minor interactions cụ thể hơn
-- **Richer Element Analysis**: Thay vì chỉ đếm dominant/missing, thêm:
-  - Element flow direction (fire→water = passion cooling into emotion)
-  - Element conflict (fire+water = inner tension between action and feeling)
-  - All-same-element reading (intensified but unbalanced)
-- **Integrated Reversed Context**: Nếu có lá reversed, synthesis phải nhắc đến reversed energy trong narrative, không chỉ hiện riêng
-
-#### Task 17 — Action Steps cụ thể theo context 🟡 MEDIUM
-**Scope:** Viết lại `generateActionSteps()` + thêm data
-**Mục tiêu:**
-- Tăng từ 2 → 3-4 action steps
-- Step 1: Dựa trên Past card → "Bài học cần ghi nhớ"
-- Step 2: Dựa trên Present card → "Hành động ngay bây giờ"
-- Step 3: Dựa trên Future card → "Chuẩn bị cho xu hướng sắp tới"
-- Step 4: Dựa trên question model → Lời khuyên tổng kết
-- Mỗi step reference tên lá bài cụ thể trong câu
-
-**Cấu trúc data mới:**
-```js
-const CARD_ACTION_TEMPLATES = {
-  0: { // The Fool
-    past_lesson: { en: "...", vi: "..." },
-    present_action: { en: "...", vi: "..." },
-    future_prep: { en: "...", vi: "..." }
-  },
-  // ... all 78 cards
-};
-```
-
-#### Task 18 — Thêm "Câu Hỏi Suy Ngẫm" (Reflection Questions) 🟢 LOW
-**Scope:** Thêm section mới trong reading panel
-**Mục tiêu:**
-- Mỗi lá bài có 2-3 câu hỏi suy ngẫm riêng (bilingual)
-- Hiển thị ở cuối mỗi card reading, dưới reversed meaning
-- Giúp người đọc tự liên hệ với bài đọc thay vì chỉ đọc thụ động
-
-**Ví dụ:**
-```
-The Hanged Man — Câu hỏi suy ngẫm:
-• Bạn đang cố kiểm soát điều gì mà thực ra cần buông bỏ?
-• Nếu đảo ngược góc nhìn về tình huống hiện tại, bạn sẽ thấy gì khác?
-```
-
-#### Task 19 — Cải thiện Energy & Confidence Badges 🟢 LOW
-**Scope:** Mở rộng `ENERGY_TYPES` và `CONFIDENCE_LEVELS` + logic
-**Mục tiêu:**
-- Thêm mô tả ngắn cho mỗi energy type (không chỉ 1 từ)
-- Confidence level giải thích TẠI SAO (ví dụ: "High — all three cards align and no reversals")
-- Thêm "Reading Tone" badge mới: Optimistic / Cautionary / Transformative / Contemplative
-
-### Thứ tự thực hiện đề xuất
-
-| Bước | Task | Lý do |
-|------|------|-------|
-| 1 | Task 14 (Card Meanings) | Nền tảng — mọi thứ khác dựa trên meaning chất lượng |
-| 2 | Task 15 (Minor Position Interp) | Khắc phục vấn đề lớn nhất: Minor Arcana lặp ý |
-| 3 | Task 16 (Synthesis Overhaul) | Kết nối tất cả thành narrative có chiều sâu |
-| 4 | Task 17 (Action Steps) | Biến phân tích thành lời khuyên hành động cụ thể |
-| 5 | Task 18 (Reflection Questions) | Tăng tương tác, giúp người đọc suy ngẫm |
-| 6 | Task 19 (Badges) | Polish cuối cùng |
-
----
-
-## IX. FINAL VERIFICATION STATUS
-- **Core Algorithms**: 100% (Deterministic & Faith-based)
-- **Data Tables**: 100% (Bilingual & Standardized)
-- **UI/UX Translation**: 98% (Final leak check pending)
-- **Documentation**: 95% (Checkbox sync pending)
+| Category | Status |
+|----------|--------|
+| Tử Vi Algorithms | 100% ✅ |
+| Tử Vi Data Tables | 100% ✅ |
+| Tử Vi Interpretation | 100% ✅ |
+| Tarot Data Tables | 100% ✅ |
+| Tarot Card Meanings | 100% ✅ (rewritten, specific & actionable) |
+| Tarot Position Interp | 100% ✅ (Major + Minor covered) |
+| Tarot Synthesis Engine | 70% — needs narrative arc, more interactions, integrated reversed context |
+| Tarot Action Steps | 50% — works but generic (2 steps, not card-specific) |
+| Responsive Design | 0% — not started |
+| Authentication | 0% — not started |
+| Bilingual QA | 95% — known card-name issue in tarot Vietnamese mode |
+| Error Handling | 0% — no load-failure warnings |
