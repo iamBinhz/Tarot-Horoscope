@@ -196,29 +196,140 @@ h1{font-family:'Times New Roman',serif;font-size:clamp(2rem,5.5vw,3.8rem);color:
 /* Footer */
 footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-top:1px solid rgba(107,82,16,.15);font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.3em;color:var(--text-dim);text-transform:uppercase;}
 
-/* ── Responsive ── */
-@media(max-width:900px){
-  .chart-grid{font-size:.9em;}
-  .palace{min-height:130px;padding:.4rem .35rem;}
-  .center-cell{min-height:130px;}
+/* ══════════════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN — Mobile, Tablet, Desktop
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Touch devices: hide custom cursor ── */
+@media (hover: none), (pointer: coarse) {
+  #cursor, #cursor-ring { display: none !important; }
+  body, .cast-btn, .hamburger, .lang-toggle, .accordion-header { cursor: auto !important; }
 }
-@media(max-width:640px){
-  nav{padding:0 1.2rem;}
-  .nav-links{position:fixed;top:62px;left:0;right:0;flex-direction:column;align-items:stretch;background:rgba(52,40,22,.97);border-bottom:1px solid rgba(196,154,60,.25);padding:.8rem 1.2rem 1rem;gap:.1rem;transform:translateY(-120%);transition:transform .3s;}
-  .nav-links.open{transform:translateY(0);}
-  .nav-links a{text-align:center;padding:.65rem;}
-  .hamburger{display:flex;}
-  .form-grid{grid-template-columns:1fr;}
-  .chart-grid{font-size:.78em;}
-  .palace{min-height:100px;padding:.3rem .25rem;}
-  .center-cell{min-height:100px;padding:.4rem;}
-  .know-grid{grid-template-columns:1fr;}
-  .lang-toggle{top:auto;bottom:1rem;right:1rem;z-index:150;}
+
+/* ── Tablet (≤1024px) ── */
+@media (max-width: 1024px) {
+  .wrap { padding: 5.5rem 1rem 2.5rem; }
+  #chart-area { max-width: 100%; }
+  .chart-grid { font-size: .85em; }
+  .palace { min-height: 130px; padding: .45rem .4rem; }
+  .center-cell { min-height: 130px; }
+  .star-entry { font-size: .78rem; }
+  .star-main { font-size: .8rem; }
+  #interp-area { max-width: 100%; }
+  .accordion-content { font-size: .95rem; }
+  .know-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 }
-@media(max-width:480px){
-  .chart-grid{grid-template-columns:repeat(2,1fr);}
-  .palace,.center-cell{min-height:110px;}
+
+/* ── Mobile (≤768px) ── */
+@media (max-width: 768px) {
+  .wrap { padding: 4.5rem .8rem 2rem; }
+  h1 { font-size: clamp(1.5rem, 7vw, 2.2rem); }
+  .subtitle { font-size: .6rem; letter-spacing: .3em; }
+  .hero-desc { font-size: .92rem; }
+
+  /* Lang toggle: bottom-right fixed */
+  .lang-toggle { position: fixed; top: auto; bottom: 1rem; right: 1rem; z-index: 150; font-size: .6rem; padding: .38rem .7rem; }
+
+  /* Form */
+  .form-section { max-width: 100%; }
+  .form-grid { grid-template-columns: 1fr; gap: .8rem; }
+  .cast-btn { padding: .75rem 1.5rem; font-size: .72rem; }
+
+  /* Chart grid: horizontally scrollable to preserve 4×4 layout */
+  #chart-area { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: .5rem; }
+  .chart-grid { min-width: 600px; font-size: .75em; }
+  .palace { min-height: 105px; padding: .3rem .25rem; }
+  .center-cell { min-height: 105px; padding: .4rem .3rem; }
+  .palace-name { font-size: .72rem; }
+  .palace-dai-han { font-size: .68rem; }
+  .star-entry { font-size: .72rem; }
+  .star-main { font-size: .74rem; }
+  .hoa-badge { font-size: .6rem; padding: .08rem .22rem; }
+  .palace-branch { font-size: .68rem; }
+  .palace-element { font-size: .64rem; }
+  .khong-vong { font-size: .6rem; }
+  .chart-legend { font-size: .72rem; gap: .5rem 1rem; padding: .5rem .7rem; }
+  .center-sigil { font-size: 1.2rem; }
+  .cc-name { font-size: .9rem !important; }
+  .cc-detail { font-size: .78rem !important; }
+  .cc-detail-dim { font-size: .72rem !important; }
+
+  /* Scroll hint for chart */
+  #chart-area::after {
+    content: '← scroll →';
+    display: block; text-align: center;
+    font-size: .65rem; color: var(--text-dim);
+    opacity: .6; margin-top: .3rem;
+    letter-spacing: .1em;
+  }
+
+  /* Interpretations */
+  #interp-area { max-width: 100%; }
+  .accordion-header { padding: .75rem .9rem; }
+  .accordion-header h3 { font-size: .9rem; }
+  .accordion-content { padding: 0 .9rem .8rem; font-size: .9rem; line-height: 1.75; }
+  .accordion.open .accordion-body { max-height: 800px; }
+
+  /* Knowledge cards */
+  .know-grid { grid-template-columns: 1fr; gap: .8rem; }
+  .know-card { padding: 1.2rem 1rem; }
+  .know-card p { font-size: .88rem; }
+
+  /* Guidance */
+  .guidance-card { padding: 1rem; }
+  .guidance-card li { font-size: .88rem; }
 }
+
+/* ── Nav hamburger (≤640px) ── */
+@media (max-width: 640px) {
+  nav { padding: 0 1rem; }
+  .nav-links {
+    position: fixed; top: 62px; left: 0; right: 0;
+    flex-direction: column; align-items: stretch;
+    background: rgba(52,40,22,.97);
+    border-bottom: 1px solid rgba(196,154,60,.25);
+    padding: .8rem 1rem 1rem; gap: .1rem;
+    transform: translateY(-120%); transition: transform .3s;
+  }
+  .nav-links.open { transform: translateY(0); }
+  .nav-links a { text-align: center; padding: .65rem; }
+  .hamburger { display: flex; }
+}
+
+/* ── Small mobile (≤480px) ── */
+@media (max-width: 480px) {
+  .wrap { padding: 4rem .6rem 1.5rem; }
+  h1 { font-size: clamp(1.3rem, 8vw, 1.8rem); }
+  .ornament { font-size: .8rem; letter-spacing: .35rem; }
+  .subtitle { font-size: .55rem; letter-spacing: .2em; }
+  .hero-desc { font-size: .85rem; margin-top: 1rem; }
+
+  /* Chart even tighter */
+  .chart-grid { min-width: 520px; font-size: .68em; }
+  .palace { min-height: 90px; padding: .2rem .18rem; }
+  .center-cell { min-height: 90px; padding: .3rem .2rem; }
+
+  /* Lunar fields */
+  #lunarFields div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; gap: .5rem !important; }
+
+  /* Interpretations tighter */
+  .accordion-header { padding: .65rem .7rem; }
+  .accordion-header h3 { font-size: .82rem; }
+  .accordion-content { padding: 0 .7rem .7rem; font-size: .85rem; }
+
+  .divider { max-width: 90%; }
+  .moon-strip { font-size: .95rem; gap: .6rem; letter-spacing: .15rem; }
+  footer { font-size: .55rem; letter-spacing: .2em; padding: 1.5rem .8rem; }
+}
+
+/* ── Landscape mobile ── */
+@media (max-height: 500px) and (orientation: landscape) {
+  .wrap { padding: 4rem .8rem 1.5rem; }
+  .hero { margin-bottom: 1.5rem; }
+  .hero-desc { display: none; }
+  .chart-grid { min-width: 650px; }
+}
+
 /* ── Vietnamese font override ── */
 body.lang-vi .nav-logo, body.lang-vi .form-title,
 body.lang-vi .chart-header h2, body.lang-vi .interp-title,

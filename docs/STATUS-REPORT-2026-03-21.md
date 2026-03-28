@@ -1,5 +1,5 @@
 # Tarot & Tử Vi System — Status Report
-> **Last Updated:** 2026-03-28 (Task 18 complete)
+> **Last Updated:** 2026-03-28 (Task 13 complete — Responsive Design)
 > **Plan:** `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md`
 > **Total lines of code (5 files):** ~8,131
 
@@ -157,20 +157,20 @@
 - Teal-accented styling (`.r-reflection`, `.r-reflection-label`, `.r-reflection-q`) with left border and subtle background
 - Bilingual labels: "❓ Suy Ngẫm" / "❓ Reflect"
 
+#### Task 13 — Mobile & Tablet Responsive Overhaul ✅
+- **Touch devices**: `@media (hover: none), (pointer: coarse)` hides custom cursor, restores `cursor: auto` on all interactive elements
+- **Tablet (≤1024px)**: Scaled chart grid, reading panels, badge cards
+- **Mobile (≤768px)**: Single-column card readings, stacked badges, bottom-right lang toggle, horizontal-scroll chart grid with `← scroll →` hint, single-column form, compact accordions, touch-friendly tap targets
+- **Small mobile (≤480px)**: 2×2 question model grid, tighter card sizes (100×175px), compact typography
+- **Landscape mobile**: Cards stay in one row, hero description hidden
+- **Files modified**: `tarot-example.html` (~120 lines CSS added), `natal_chart.html` (~115 lines CSS added/replaced)
+- **Verified**: Desktop (1200px), Tablet (768px), Mobile (375px), Small (320px) — all breakpoints tested in browser
+
 ---
 
 ## III. INCOMPLETE TASKS (Priority: High → Low)
 
 ### 🟡 MEDIUM PRIORITY
-
-#### Task 13 — Mobile & Tablet Responsive Overhaul — PLANNED
-**Why:** Both `natal_chart.html` and `tarot-example.html` are desktop-only. Chart grid and tarot layout break on small screens.
-**Scope:** CSS media queries in both HTML files
-**Work needed:**
-- Media queries for mobile (<768px), tablet (768–1024px), desktop (>1024px)
-- Refactor `chart-grid` (12-palace grid) for small screens: scrollable or stacked
-- Responsive nav, footer, card display
-- Touch-friendly interactive elements
 
 #### Bilingual Leak Check — PENDING VERIFICATION
 **Why:** Card names (e.g., "The Tower") appear in English even in Vietnamese mode. Need full crawl.
@@ -299,7 +299,7 @@ tarot-example.html:
 | Tarot Synthesis Engine | 100% ✅ — narrative arc, 65 interactions, element flow, reversed integration, badge descriptions & reasoning complete |
 | Tarot Action Steps | 100% ✅ — 4 card-specific steps per reading (past lesson, present action, future prep, model advice) |
 | Tarot Reflection Questions | 100% ✅ — 78 cards × 2–3 questions × bilingual, displayed below each card reading |
-| Responsive Design | 0% — not started |
+| Responsive Design | 100% ✅ — touch cursor, tablet, mobile, small mobile, landscape |
 | Authentication | 0% — not started |
 | Bilingual QA | 95% — known card-name issue in tarot Vietnamese mode |
 | Error Handling | 0% — no load-failure warnings |
