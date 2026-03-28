@@ -46,6 +46,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--nav-bg);bac
 .nav-links a.active{color:#dbb85e;}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:none;padding:.4rem;background:none;border:none;}
 .hamburger span{display:block;width:22px;height:2px;background:#dbb85e;border-radius:2px;transition:transform .3s,opacity .3s;}
+.hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 
 /* Lang toggle */
 .lang-toggle{position:fixed;top:72px;right:1.2rem;display:inline-flex;align-items:center;z-index:101;font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:#7a5a10;background:rgba(230,222,205,.9);border:1px solid rgba(140,120,60,.35);padding:.4rem .9rem;cursor:none;border-radius:3px;backdrop-filter:blur(6px);transition:all .3s;box-shadow:0 1px 4px rgba(0,0,0,.1);}
@@ -285,13 +288,15 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
   nav { padding: 0 1rem; }
   .nav-links {
     position: fixed; top: 62px; left: 0; right: 0;
+    z-index: 99;
     flex-direction: column; align-items: stretch;
     background: rgba(52,40,22,.97);
     border-bottom: 1px solid rgba(196,154,60,.25);
-    padding: .8rem 1rem 1rem; gap: .1rem;
-    transform: translateY(-120%); transition: transform .3s;
+    padding: 0 1rem; gap: .1rem;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height .3s ease, opacity .2s ease, padding .3s ease;
   }
-  .nav-links.open { transform: translateY(0); }
+  .nav-links.open { max-height: 280px; opacity: 1; padding: .8rem 1rem 1rem; }
   .nav-links a { text-align: center; padding: .65rem; }
   .hamburger { display: flex; }
 }
@@ -542,7 +547,18 @@ body.lang-vi h1 {
 })();
 
 /* ── Hamburger ── */
-document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('open'));
+(function(){
+  const hb = document.getElementById('hamburger');
+  const nav = document.getElementById('navLinks');
+  hb.addEventListener('click', function(){
+    nav.classList.toggle('open'); hb.classList.toggle('open');
+  });
+  document.addEventListener('click', function(e){
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !hb.contains(e.target)){
+      nav.classList.remove('open'); hb.classList.remove('open');
+    }
+  });
+})();
 
 /* ── Custom Cursor ── */
 (function(){

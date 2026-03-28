@@ -1,5 +1,5 @@
 # Tarot & Tử Vi System — Status Report
-> **Last Updated:** 2026-03-28 (Task 13 complete — Responsive Design)
+> **Last Updated:** 2026-03-28 (Task 13 nav bug fix — hamburger dropdown on mobile)
 > **Plan:** `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md`
 > **Total lines of code (5 files):** ~8,131
 
@@ -165,6 +165,7 @@
 - **Landscape mobile**: Cards stay in one row, hero description hidden
 - **Files modified**: `tarot-example.html` (~120 lines CSS added), `natal_chart.html` (~115 lines CSS added/replaced)
 - **Verified**: Desktop (1200px), Tablet (768px), Mobile (375px), Small (320px) — all breakpoints tested in browser
+- **Bug fix (2026-03-28)**: Replaced `transform: translateY(-120%)` nav-hide approach with `max-height: 0; overflow: hidden; opacity: 0` — the transform approach failed when element height was 0 on render, causing nav links to flash visible. Also added: `z-index: 99` to dropdown, hamburger → X animation (`.open` class on `<button>`), click-outside-to-close on all 3 pages (`index.html`, `tarot-example.html`, `natal_chart.html`)
 
 ---
 
