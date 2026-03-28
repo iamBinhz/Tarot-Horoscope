@@ -470,6 +470,23 @@ body.lang-vi .cf-name, body.lang-vi .cf-kw {
   color: var(--text-dim); line-height: 1.6; font-style: italic;
   border-top: 1px solid rgba(201,168,76,.1);
 }
+.r-reflection {
+  margin-top: .8rem; padding: .7rem .8rem;
+  background: rgba(100,200,200,.05);
+  border-left: 2px solid rgba(100,200,200,.3);
+  border-radius: 0 4px 4px 0;
+}
+.r-reflection-label {
+  font-family: 'Cinzel', 'Playfair Display', serif;
+  font-size: .66rem; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--teal-bright, rgba(100,200,200,.85));
+  margin-bottom: .35rem;
+}
+.r-reflection-q {
+  font-size: .82rem; line-height: 1.6;
+  color: var(--text, #ddd); opacity: .88;
+  margin-bottom: .25rem; padding-left: .2rem;
+}
 .synth-section { margin-bottom: 1.2rem; }
 .synth-section-title {
   font-family: 'Cinzel', serif; font-size: .72rem; letter-spacing: .18em;
@@ -481,17 +498,33 @@ body.lang-vi .cf-name, body.lang-vi .cf-kw {
 .synth-path { font-size: .88rem; line-height: 1.6; }
 .synth-path ol { padding-left: 1.2rem; margin: .4rem 0 0; }
 .synth-path li { margin-bottom: .3rem; color: var(--text-dim); }
-.synth-badges {
+.synth-story { font-size: .9rem; line-height: 1.75; color: var(--text); font-style: italic; border-left: 2px solid rgba(201,168,76,.25); padding-left: 1rem; margin: .5rem 0; }
+.synth-story p { margin: 0 0 .4rem; }
+.synth-badges-expanded {
   display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
   margin-top: 1rem; padding-top: .8rem;
   border-top: 1px solid rgba(201,168,76,.12);
 }
-.synth-badge {
-  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
-  padding: .35rem .8rem; border: 1px solid rgba(201,168,76,.25);
-  border-radius: 3px; color: var(--gold-dim); font-family: 'Cinzel', serif;
+.synth-badge-card {
+  flex: 1 1 220px; max-width: 320px;
+  padding: .6rem .9rem; border: 1px solid rgba(201,168,76,.25);
+  border-radius: 5px; background: rgba(201,168,76,.04);
 }
-.synth-badge .badge-icon { margin-right: .3rem; }
+.synth-badge-card .badge-header {
+  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--gold-dim); font-family: 'Cinzel', serif;
+  margin-bottom: .3rem;
+}
+.synth-badge-card .badge-header .badge-icon { margin-right: .3rem; }
+.synth-badge-card .badge-desc {
+  font-size: .78rem; color: var(--text-dim); line-height: 1.5;
+  margin-bottom: .25rem;
+}
+.synth-badge-card .badge-reasons {
+  margin: .2rem 0 0; padding-left: 1.1rem;
+  font-size: .72rem; color: var(--text-dim); line-height: 1.4;
+}
+.synth-badge-card .badge-reasons li { margin-bottom: .15rem; }
 </style>
 </head>
 <body>
@@ -1126,6 +1159,12 @@ function spawnSparkles(el) {
 
 // ─── SYNTHESIS HELPERS ────────────────────────────────────────────────────────
 
+function extractBrief(text) {
+  if (!text) return '';
+  const dot = text.indexOf('.');
+  return dot > 0 ? text.substring(0, dot + 1) : text;
+}
+
 function getCardElement(card) {
   if (card.arcana === 'major') return 'spirit';
   return SUIT_ELEMENT[card.suit] || 'spirit';
@@ -1142,6 +1181,35 @@ function analyzeElements(cards) {
   const dominant = Object.entries(counts).filter(([k, v]) => v >= 2).map(([k]) => k);
   const missing = ['fire', 'water', 'air', 'earth'].filter(e => counts[e] === 0);
   return { counts, dominant, missing, majorCount };
+}
+
+function analyzeElementFlow(cards) {
+  const elements = cards.map(c => getCardElement(c));
+  const conflicts = [];
+  if (typeof ELEMENT_CONFLICT_PAIRS !== 'undefined') {
+    for (let i = 0; i < elements.length - 1; i++) {
+      if (ELEMENT_CONFLICT_PAIRS[elements[i]] === elements[i + 1]) {
+        conflicts.push([i, i + 1]);
+      }
+    }
+  }
+  // Look up 3-element arc narrative
+  const arcKey = elements.join(',');
+  let arcNarrative = null;
+  if (typeof ELEMENT_FLOW_ANALYSIS !== 'undefined' && ELEMENT_FLOW_ANALYSIS.arcs && ELEMENT_FLOW_ANALYSIS.arcs[arcKey]) {
+    arcNarrative = ELEMENT_FLOW_ANALYSIS.arcs[arcKey];
+  }
+  // Look up conflict narratives
+  const conflictNarratives = [];
+  if (typeof ELEMENT_FLOW_ANALYSIS !== 'undefined' && ELEMENT_FLOW_ANALYSIS.conflicts) {
+    for (const [i, j] of conflicts) {
+      const ck = `${elements[i]},${elements[j]}`;
+      if (ELEMENT_FLOW_ANALYSIS.conflicts[ck]) {
+        conflictNarratives.push(ELEMENT_FLOW_ANALYSIS.conflicts[ck]);
+      }
+    }
+  }
+  return { elements, conflicts, arcNarrative, conflictNarratives };
 }
 
 function findInteraction(cardA, cardB) {
@@ -1181,34 +1249,202 @@ function determineEnergy(cards, analysis) {
 function determineConfidence(cards, analysis) {
   const futureReversed = cards[2] && cards[2].isReversed;
   const allReversed = cards.every(c => c.isReversed);
-  if (allReversed || analysis.dominant.length === 0) return 'low';
-  if (analysis.dominant.length >= 1 && !futureReversed) return 'high';
-  return 'moderate';
+  const reversedCount = cards.filter(c => c.isReversed).length;
+  const hasReasons = typeof CONFIDENCE_REASONS !== 'undefined';
+  const lk = currentLang === 'vi' ? 'vi' : 'en';
+  const reasons = [];
+
+  if (allReversed) {
+    if (hasReasons) reasons.push(CONFIDENCE_REASONS.all_reversed[lk]);
+    return { key: 'low', reasons };
+  }
+  if (analysis.dominant.length === 0) {
+    if (hasReasons) reasons.push(CONFIDENCE_REASONS.no_dominant[lk]);
+    if (futureReversed && hasReasons) reasons.push(CONFIDENCE_REASONS.future_reversed[lk]);
+    return { key: 'low', reasons };
+  }
+
+  // Check for high
+  if (analysis.dominant.length >= 1 && !futureReversed) {
+    if (reversedCount === 0 && hasReasons) reasons.push(CONFIDENCE_REASONS.aligned_upright[lk]);
+    if (analysis.dominant.length >= 1 && hasReasons) reasons.push(CONFIDENCE_REASONS.dominant_clear[lk]);
+    if (!futureReversed && hasReasons) reasons.push(CONFIDENCE_REASONS.future_upright[lk]);
+    return { key: 'high', reasons };
+  }
+
+  // Moderate
+  if (reversedCount >= 1 && hasReasons) reasons.push(CONFIDENCE_REASONS.mixed_reversals[lk]);
+  if (futureReversed && hasReasons) reasons.push(CONFIDENCE_REASONS.future_reversed[lk]);
+  const uniqueElements = new Set(cards.map(c => getCardElement(c)));
+  if (uniqueElements.size >= 3 && hasReasons) reasons.push(CONFIDENCE_REASONS.scattered_elements[lk]);
+  return { key: 'moderate', reasons };
 }
 
-function generateActionSteps(futureCard, model, isVi) {
+function determineReadingTone(cards, analysis, energyKey) {
+  const reversedCount = cards.filter(c => c.isReversed).length;
+  const names = cards.map(c => c.name);
+  const transformCards = ['Death', 'The Tower', 'Wheel of Fortune', 'Judgement'];
+  const contemplativeCards = ['The Hermit', 'The High Priestess', 'The Hanged Man', 'The Moon'];
+
+  // Transformative: transformation cards present
+  if (names.some(n => transformCards.includes(n))) return 'transformative';
+  // Cautionary: 2+ reversals or challenging energy
+  if (reversedCount >= 2 || energyKey === 'challenging') return 'cautionary';
+  // Contemplative: introspective cards or water-dominant
+  if (names.some(n => contemplativeCards.includes(n)) || (analysis.dominant.length === 1 && analysis.dominant[0] === 'water')) return 'contemplative';
+  // Optimistic: default positive
+  return 'optimistic';
+}
+
+function generateActionSteps(cards, model, isVi) {
   const steps = [];
-  const d = isVi ? DECK_VI[futureCard.id] : futureCard;
-  // Step 1: based on future card
-  if (futureCard.isReversed && typeof REVERSED_MEANINGS !== 'undefined' && REVERSED_MEANINGS[futureCard.id]) {
-    const rev = REVERSED_MEANINGS[futureCard.id];
-    steps.push(isVi
-      ? `Hãy đối mặt với thử thách của ${futureCard.name} ngược: nhận diện điều đang bị chặn và hành động để giải phóng nó.`
-      : `Face the challenge of reversed ${futureCard.name}: identify what is blocked and take action to release it.`);
+  const lk = isVi ? 'vi' : 'en';
+  const [pastCard, presentCard, futureCard] = cards;
+  const hasTemplates = typeof CARD_ACTION_TEMPLATES !== 'undefined';
+
+  // Step 1: Past lesson
+  if (hasTemplates && CARD_ACTION_TEMPLATES[pastCard.id]) {
+    steps.push(`<strong>${pastCard.name}:</strong> ${CARD_ACTION_TEMPLATES[pastCard.id].past_lesson[lk]}`);
   } else {
+    const d = isVi ? DECK_VI[pastCard.id] : pastCard;
     steps.push(isVi
-      ? `Đón nhận năng lượng của ${futureCard.name}: ${d.kw.join(', ')}. Hãy để những phẩm chất này dẫn dắt bước tiếp theo.`
-      : `Embrace the energy of ${futureCard.name}: ${d.kw.join(', ')}. Let these qualities guide your next step.`);
+      ? `<strong>${pastCard.name}:</strong> Suy ngẫm về bài học từ năng lượng ${d.kw.join(', ')} — điều này đã định hình bạn.`
+      : `<strong>${pastCard.name}:</strong> Reflect on the lesson from the energy of ${d.kw.join(', ')} — this shaped who you are.`);
   }
-  // Step 2: based on question model
+
+  // Step 2: Present action
+  if (hasTemplates && CARD_ACTION_TEMPLATES[presentCard.id]) {
+    steps.push(`<strong>${presentCard.name}:</strong> ${CARD_ACTION_TEMPLATES[presentCard.id].present_action[lk]}`);
+  } else {
+    const d = isVi ? DECK_VI[presentCard.id] : presentCard;
+    steps.push(isVi
+      ? `<strong>${presentCard.name}:</strong> Hành động ngay với năng lượng ${d.kw.join(', ')} — đây là thời điểm then chốt.`
+      : `<strong>${presentCard.name}:</strong> Act now with the energy of ${d.kw.join(', ')} — this is the pivotal moment.`);
+  }
+
+  // Step 3: Future preparation
+  if (hasTemplates && CARD_ACTION_TEMPLATES[futureCard.id]) {
+    steps.push(`<strong>${futureCard.name}:</strong> ${CARD_ACTION_TEMPLATES[futureCard.id].future_prep[lk]}`);
+  } else {
+    const d = isVi ? DECK_VI[futureCard.id] : futureCard;
+    steps.push(isVi
+      ? `<strong>${futureCard.name}:</strong> Chuẩn bị đón nhận ${d.kw.join(', ')} — tương lai đang hình thành.`
+      : `<strong>${futureCard.name}:</strong> Prepare to embrace ${d.kw.join(', ')} — the future is taking shape.`);
+  }
+
+  // Step 4: Question-model-specific advice
   const modelSteps = {
-    general: { en: 'Stay open to the message and revisit this reading in a week to see how events have unfolded.', vi: 'Giữ tâm mở với thông điệp và xem lại bài đọc sau một tuần để thấy sự kiện đã diễn biến ra sao.' },
-    problem: { en: 'Name the obstacle specifically, then take one concrete action today to address its root cause.', vi: 'Gọi tên chướng ngại cụ thể, sau đó thực hiện một hành động cụ thể hôm nay để xử lý nguyên nhân gốc rễ.' },
+    general: { en: 'Revisit this reading in a week — notice which steps you took and how events unfolded.', vi: 'Xem lại bài đọc sau một tuần — nhận ra bước nào bạn đã thực hiện và sự kiện đã diễn biến ra sao.' },
+    problem: { en: 'Name the root cause of the problem specifically and take one concrete action to address it today.', vi: 'Gọi tên nguyên nhân gốc rễ của vấn đề cụ thể và thực hiện một hành động cụ thể để giải quyết hôm nay.' },
     solution: { en: 'Commit to the first step within 24 hours — momentum matters more than perfection right now.', vi: 'Cam kết thực hiện bước đầu tiên trong vòng 24 giờ — động lực quan trọng hơn sự hoàn hảo lúc này.' },
-    crossroads: { en: 'Write down both options and their consequences. Sleep on it, then choose with conviction by morning.', vi: 'Viết ra cả hai lựa chọn và hệ quả. Suy ngẫm qua đêm, rồi chọn với sự tin tưởng vào sáng mai.' }
+    crossroads: { en: 'Write down both options and their full consequences, then commit to one by tomorrow morning.', vi: 'Viết ra cả hai lựa chọn và hệ quả đầy đủ, rồi cam kết một lựa chọn trước sáng mai.' }
   };
   steps.push(modelSteps[model] ? (isVi ? modelSteps[model].vi : modelSteps[model].en) : (isVi ? 'Tin vào trực giác của bạn.' : 'Trust your intuition.'));
   return steps;
+}
+
+function generateStory(cards, isVi) {
+  if (typeof NARRATIVE_TEMPLATES === 'undefined') return '';
+  const lk = isVi ? 'vi' : 'en';
+  const NT = NARRATIVE_TEMPLATES;
+  const posNames = ['past', 'present', 'future'];
+  const ELEMENT_NAMES_LOCAL = { fire: isVi ? 'Lửa' : 'Fire', water: isVi ? 'Nước' : 'Water', air: isVi ? 'Gió' : 'Air', earth: isVi ? 'Đất' : 'Earth', spirit: isVi ? 'Tinh Thần' : 'Spirit' };
+  const elements = cards.map(c => getCardElement(c));
+  const parts = [];
+
+  function getCardType(card) {
+    if (card.arcana === 'major') return card.isReversed ? 'major_reversed' : 'major';
+    if (['King','Queen','Knight','Page'].includes(card.num)) return card.isReversed ? 'court_reversed' : 'court';
+    return card.isReversed ? 'minor_reversed' : 'minor';
+  }
+
+  function fillTemplate(tpl, card, isVi) {
+    if (!tpl) return '';
+    const d = isVi ? DECK_VI[card.id] : card;
+    let text = tpl[lk] || '';
+    text = text.replace(/\{name\}/g, card.name);
+    text = text.replace(/\{kw\}/g, d.kw.slice(0, 2).join(', '));
+    // Reversed brief
+    if (text.includes('{rev}')) {
+      let rev = '';
+      if (typeof REVERSED_MEANINGS !== 'undefined' && REVERSED_MEANINGS[card.id]) {
+        rev = extractBrief(REVERSED_MEANINGS[card.id][lk]);
+      }
+      text = text.replace(/\{rev\}/g, rev || (isVi ? 'năng lượng bị chặn' : 'blocked energy'));
+    }
+    return text;
+  }
+
+  // Past sentence
+  const pastType = getCardType(cards[0]);
+  if (NT.past && NT.past[pastType]) {
+    parts.push(fillTemplate(NT.past[pastType], cards[0], isVi));
+  }
+
+  // Transition 1: past → present
+  if (NT.transition_1) {
+    if (elements[0] === elements[1] && NT.transition_1.same_element) {
+      let t = NT.transition_1.same_element[lk] || '';
+      t = t.replace(/\{element\}/g, ELEMENT_NAMES_LOCAL[elements[0]] || elements[0]);
+      parts.push(t);
+    } else if (typeof ELEMENT_CONFLICT_PAIRS !== 'undefined' && ELEMENT_CONFLICT_PAIRS[elements[0]] === elements[1] && NT.transition_1.conflict) {
+      let t = NT.transition_1.conflict[lk] || '';
+      t = t.replace(/\{el1\}/g, ELEMENT_NAMES_LOCAL[elements[0]] || elements[0]);
+      t = t.replace(/\{el2\}/g, ELEMENT_NAMES_LOCAL[elements[1]] || elements[1]);
+      // Add conflict text
+      let ct = '';
+      if (typeof ELEMENT_FLOW_ANALYSIS !== 'undefined' && ELEMENT_FLOW_ANALYSIS.conflicts) {
+        const ck = `${elements[0]},${elements[1]}`;
+        if (ELEMENT_FLOW_ANALYSIS.conflicts[ck]) ct = extractBrief(ELEMENT_FLOW_ANALYSIS.conflicts[ck][lk]);
+      }
+      t = t.replace(/\{conflict_text\}/g, ct);
+      parts.push(t);
+    } else if (NT.transition_1.shift) {
+      let t = NT.transition_1.shift[lk] || '';
+      t = t.replace(/\{el1\}/g, ELEMENT_NAMES_LOCAL[elements[0]] || elements[0]);
+      t = t.replace(/\{el2\}/g, ELEMENT_NAMES_LOCAL[elements[1]] || elements[1]);
+      parts.push(t);
+    }
+  }
+
+  // Present sentence
+  const presentType = getCardType(cards[1]);
+  if (NT.present && NT.present[presentType]) {
+    parts.push(fillTemplate(NT.present[presentType], cards[1], isVi));
+  }
+
+  // Transition 2: present → future
+  if (NT.transition_2) {
+    if (elements[1] === elements[2] && NT.transition_2.same_element) {
+      let t = NT.transition_2.same_element[lk] || '';
+      t = t.replace(/\{element\}/g, ELEMENT_NAMES_LOCAL[elements[1]] || elements[1]);
+      parts.push(t);
+    } else if (typeof ELEMENT_CONFLICT_PAIRS !== 'undefined' && ELEMENT_CONFLICT_PAIRS[elements[1]] === elements[2] && NT.transition_2.conflict) {
+      let t = NT.transition_2.conflict[lk] || '';
+      t = t.replace(/\{el1\}/g, ELEMENT_NAMES_LOCAL[elements[1]] || elements[1]);
+      t = t.replace(/\{el2\}/g, ELEMENT_NAMES_LOCAL[elements[2]] || elements[2]);
+      let ct = '';
+      if (typeof ELEMENT_FLOW_ANALYSIS !== 'undefined' && ELEMENT_FLOW_ANALYSIS.conflicts) {
+        const ck = `${elements[1]},${elements[2]}`;
+        if (ELEMENT_FLOW_ANALYSIS.conflicts[ck]) ct = extractBrief(ELEMENT_FLOW_ANALYSIS.conflicts[ck][lk]);
+      }
+      t = t.replace(/\{conflict_text\}/g, ct);
+      parts.push(t);
+    } else if (NT.transition_2.shift) {
+      let t = NT.transition_2.shift[lk] || '';
+      t = t.replace(/\{el1\}/g, ELEMENT_NAMES_LOCAL[elements[1]] || elements[1]);
+      t = t.replace(/\{el2\}/g, ELEMENT_NAMES_LOCAL[elements[2]] || elements[2]);
+      parts.push(t);
+    }
+  }
+
+  // Future sentence
+  const futureType = getCardType(cards[2]);
+  if (NT.future && NT.future[futureType]) {
+    parts.push(fillTemplate(NT.future[futureType], cards[2], isVi));
+  }
+
+  return parts.filter(p => p).map(p => `<p>${p}</p>`).join('');
 }
 
 // ─── SHOW READING ─────────────────────────────────────────────────────────────
@@ -1256,6 +1492,16 @@ function showReading() {
       <div class="r-meaning">${d.meaning}</div>
       ${posInterp ? `<div class="r-position-interp">${posInterp}</div>` : ''}
       ${reversedHtml}
+      ${(() => {
+        if (typeof REFLECTION_QUESTIONS === 'undefined' || !REFLECTION_QUESTIONS[card.id]) return '';
+        const qs = REFLECTION_QUESTIONS[card.id][isVi ? 'vi' : 'en'];
+        if (!qs || qs.length === 0) return '';
+        const refLabel = isVi ? '❓ Suy Ngẫm' : '❓ Reflect';
+        return `<div class="r-reflection">
+          <div class="r-reflection-label">${refLabel}</div>
+          ${qs.map(q => `<div class="r-reflection-q">• ${q}</div>`).join('')}
+        </div>`;
+      })()}
     </div>`;
   }).join('');
   panel.classList.add('visible');
@@ -1273,31 +1519,54 @@ function generateConclusion() {
 
   // ── Analysis ──
   const elAnalysis = analyzeElements(drawnCards);
+  const flow = analyzeElementFlow(drawnCards);
   const energyKey = determineEnergy(drawnCards, elAnalysis);
-  const confKey = determineConfidence(drawnCards, elAnalysis);
+  const confResult = determineConfidence(drawnCards, elAnalysis);
+  const confKey = confResult.key;
+  const confReasons = confResult.reasons || [];
   const energy = ENERGY_TYPES[energyKey];
   const conf = CONFIDENCE_LEVELS[confKey];
+  const toneKey = (typeof READING_TONES !== 'undefined') ? determineReadingTone(drawnCards, elAnalysis, energyKey) : null;
+  const tone = toneKey && READING_TONES[toneKey] ? READING_TONES[toneKey] : null;
 
   // ── Opening (question-model aware) ──
   const opening = (typeof QUESTION_MODEL_OPENINGS !== 'undefined' && QUESTION_MODEL_OPENINGS[selectedModel])
     ? QUESTION_MODEL_OPENINGS[selectedModel][lk]
     : (isVi ? 'Các lá bài đã lên tiếng.' : 'The cards have spoken.');
 
-  // ── Thread: card interactions ──
+  // ── The Story (narrative arc) ──
+  const storyHtml = generateStory(drawnCards, isVi);
+
+  // ── Thread: card interactions (with integrated reversed context) ──
   let threadParts = [];
-  // Check pairs: past↔present, present↔future, past↔future
   const pairs = [[0,1],[1,2],[0,2]];
   for (const [a, b] of pairs) {
     const interaction = findInteraction(drawnCards[a], drawnCards[b]);
     if (interaction && interaction[lk] && !threadParts.includes(interaction[lk])) {
-      threadParts.push(interaction[lk]);
+      let text = interaction[lk];
+      // Integrate reversed context inline
+      const reversedNotes = [];
+      for (const idx of [a, b]) {
+        if (drawnCards[idx].isReversed && typeof REVERSED_MEANINGS !== 'undefined' && REVERSED_MEANINGS[drawnCards[idx].id]) {
+          const revBrief = extractBrief(REVERSED_MEANINGS[drawnCards[idx].id][lk]);
+          if (revBrief) {
+            reversedNotes.push(isVi
+              ? `${drawnCards[idx].name} ngược: ${revBrief}`
+              : `${drawnCards[idx].name} reversed: ${revBrief}`);
+          }
+        }
+      }
+      if (reversedNotes.length > 0) {
+        text += ' <em>(' + reversedNotes.join(' | ') + ')</em>';
+      }
+      threadParts.push(text);
     }
   }
   const threadHtml = threadParts.length > 0
     ? threadParts.map(t => `<p>${t}</p>`).join('')
     : `<p>${isVi ? 'Các lá bài mang năng lượng riêng biệt, tạo nên một bức tranh đa chiều cho hành trình của bạn.' : 'The cards carry distinct energies, creating a multifaceted picture for your journey.'}</p>`;
 
-  // ── Elements ──
+  // ── Elements (with flow analysis) ──
   let elemParts = [];
   // Arcana ratio
   if (typeof ARCANA_RATIO_TEXT !== 'undefined' && ARCANA_RATIO_TEXT[elAnalysis.majorCount]) {
@@ -1315,22 +1584,34 @@ function generateConclusion() {
       elemParts.push(ELEMENT_MISSING[el][lk]);
     }
   }
+  // Element flow arc
+  if (flow.arcNarrative) {
+    elemParts.push(flow.arcNarrative[lk]);
+  }
+  // Element conflicts
+  for (const cn of flow.conflictNarratives) {
+    if (cn[lk] && !elemParts.includes(cn[lk])) {
+      elemParts.push(cn[lk]);
+    }
+  }
   const elemHtml = elemParts.length > 0
     ? elemParts.map(e => `<p>${e}</p>`).join('')
     : `<p>${isVi ? 'Sự cân bằng nguyên tố trong trải bài này khá đồng đều.' : 'The elemental balance in this spread is relatively even.'}</p>`;
 
   // ── Action Steps ──
-  const steps = generateActionSteps(drawnCards[2], selectedModel, isVi);
+  const steps = generateActionSteps(drawnCards, selectedModel, isVi);
   const stepsHtml = `<ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
 
   // ── Section labels ──
   const labels = {
     title: isVi ? '☽ Tổng Hợp Bài Đọc ☽' : '☽ Reading Synthesis ☽',
+    story: isVi ? 'Câu Chuyện' : 'The Story',
     thread: isVi ? 'Sợi Chỉ Đỏ' : 'The Thread',
     elements: isVi ? 'Phân Tích Nguyên Tố' : 'Element Analysis',
     path: isVi ? 'Con Đường Phía Trước' : 'Path Forward',
     energyLabel: isVi ? 'Năng Lượng' : 'Energy',
-    confLabel: isVi ? 'Độ Tin Cậy' : 'Confidence'
+    confLabel: isVi ? 'Độ Tin Cậy' : 'Confidence',
+    toneLabel: isVi ? 'Giọng Đọc' : 'Reading Tone'
   };
 
   box.innerHTML = `
@@ -1338,6 +1619,10 @@ function generateConclusion() {
     <div class="synth-section">
       <div class="synth-opening">${opening}</div>
     </div>
+    ${storyHtml ? `<div class="synth-section">
+      <div class="synth-section-title">${labels.story}</div>
+      <div class="synth-story">${storyHtml}</div>
+    </div>` : ''}
     <div class="synth-section">
       <div class="synth-section-title">${labels.thread}</div>
       <div class="synth-thread">${threadHtml}</div>
@@ -1350,9 +1635,20 @@ function generateConclusion() {
       <div class="synth-section-title">${labels.path}</div>
       <div class="synth-path">${stepsHtml}</div>
     </div>
-    <div class="synth-badges">
-      <div class="synth-badge"><span class="badge-icon">${energy.icon}</span> ${labels.energyLabel}: ${energy[lk]}</div>
-      <div class="synth-badge">${labels.confLabel}: ${conf[lk]}</div>
+    <div class="synth-badges-expanded">
+      <div class="synth-badge-card">
+        <div class="badge-header"><span class="badge-icon">${energy.icon}</span> ${labels.energyLabel}: ${energy[lk]}</div>
+        ${energy.desc ? `<div class="badge-desc">${energy.desc[lk]}</div>` : ''}
+      </div>
+      <div class="synth-badge-card">
+        <div class="badge-header">${labels.confLabel}: ${conf[lk]}</div>
+        ${conf.reasons ? `<div class="badge-desc">${conf.reasons[lk]}</div>` : ''}
+        ${confReasons.length > 0 ? `<ul class="badge-reasons">${confReasons.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+      </div>
+      ${tone ? `<div class="synth-badge-card">
+        <div class="badge-header"><span class="badge-icon">${tone.icon}</span> ${labels.toneLabel}: ${tone[lk]}</div>
+        ${tone.desc ? `<div class="badge-desc">${tone.desc[lk]}</div>` : ''}
+      </div>` : ''}
     </div>
   `;
   area.style.display = 'block';

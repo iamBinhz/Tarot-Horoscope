@@ -1,7 +1,7 @@
 # Tarot & Tử Vi System — Status Report
-> **Last Updated:** 2026-03-27
+> **Last Updated:** 2026-03-28 (Task 18 complete)
 > **Plan:** `docs/superpowers/plans/2026-03-20-tarot-tuvi-improvements.md`
-> **Total lines of code (5 files):** 6,631
+> **Total lines of code (5 files):** ~8,131
 
 ---
 
@@ -11,9 +11,9 @@
 |------|-------|--------|------|
 | `lunar-data.js` | 323 | **DONE** | Ho Ngoc Duc lunar calendar (1800–2199), `gregorianToLunar()`, `formatLunarDate()` |
 | `tuvi-data.js` | 1,837 | **DONE** | 25 data tables + functions: star positions, Tứ Hóa, Cách Cục (33 patterns), 168 palace×star meanings, Đại Hạn, Tổng Luận templates |
-| `tarot-data.js` | 1,335 | **DONE** | 16 data structures: reversed meanings (78), Major position interp (22×3), Minor position interp (56×3), interactions (32), elements, energy, confidence |
+| `tarot-data.js` | ~3,840 | **DONE** | 21 data structures: reversed meanings (78), Major/Minor position interp, interactions (~65), elements, energy (with desc), confidence (with reasons), reading tones (4), confidence reasons (8), narrative templates, action templates (78×3), reflection questions (78×2-3×bilingual) |
 | `natal_chart.html` | 1,717 | **DONE** | Full Tử Vi chart: deterministic algo, 12-palace interp, Tổng Luận, Cách Cục recognition, borrowed star logic |
-| `tarot-example.html` | 1,419 | **DONE** | Tarot reader: reversed mechanic, question model UI, synthesis engine, bilingual |
+| `tarot-example.html` | ~1,715 | **DONE** | Tarot reader: reversed mechanic, question model UI, synthesis engine, reflection questions, bilingual |
 
 ---
 
@@ -84,7 +84,7 @@
 - `SUIT_ELEMENT`, `ELEMENT_NAMES`, `ELEMENT_DOMINANT`, `ELEMENT_MISSING`
 - `CARD_INTERACTIONS`: 32 patterns + `ELEMENT_TRANSITIONS` fallback
 - `QUESTION_MODELS` (4 types), `QUESTION_MODEL_OPENINGS`
-- `ENERGY_TYPES` (5), `CONFIDENCE_LEVELS` (3), `ARCANA_RATIO_TEXT`
+- `ENERGY_TYPES` (5, with descriptions), `CONFIDENCE_LEVELS` (3, with reasoning), `ARCANA_RATIO_TEXT`, `READING_TONES` (4), `CONFIDENCE_REASONS` (8)
 
 ### Phase 5: Tarot Algorithm & UI
 
@@ -97,7 +97,7 @@
 - `showReading()`: uses `MAJOR_POSITION_INTERP` for Major, `MINOR_POSITION_INTERP` for Minor, `POSITION_FRAMES` as fallback, shows reversed meanings
 - `generateConclusion()`: Opening → Thread → Elements → Path → Energy/Confidence badges
 - `analyzeElements()`, `findInteraction()`, `determineEnergy()`, `determineConfidence()`
-- `generateActionSteps()`: 2 steps (future card + question model based)
+- `generateActionSteps()`: 4 card-specific steps (past lesson + present action + future prep + model advice)
 
 ### Phase 6: Validation & Bug Fixes
 
@@ -107,7 +107,7 @@
 - `tuvi-data.js` loading bug fixed (duplicate const declarations removed)
 - Translation overhaul: all data standardized to `{vi: ..., en: ...}` format
 
-### Phase 9: Tarot Analysis Quality (Partial)
+### Phase 9: Tarot Analysis Quality
 
 #### Task 14 — Viết lại Card Meanings ✅
 - 78 × 2 languages rewritten: 3–5 sentences per card
@@ -119,44 +119,47 @@
 - `showReading()` now checks `MINOR_POSITION_INTERP` with typeof guard
 - `POSITION_FRAMES` prefix kept as fallback only
 
+#### Task 16 — Nâng cấp Reading Synthesis ✅
+- **CARD_INTERACTIONS** expanded: 32 → ~65 patterns (Court↔Court rank-specific, Ace↔Ten, same-number-across-suits, 20+ Major↔Minor specifics)
+- **ELEMENT_CONFLICT_PAIRS**: fire↔water, air↔earth conflict detection
+- **ELEMENT_FLOW_ANALYSIS**: 4 conflict narratives + 18 three-element arc narratives (all permutations of fire/water/earth/air + 4 same-element arcs)
+- **NARRATIVE_TEMPLATES**: per-position templates (past/present/future × major/minor/court × upright/reversed) + transition templates (same_element/conflict/shift)
+- New functions: `extractBrief()`, `analyzeElementFlow()`, `generateStory()` — builds continuous narrative paragraph across 3 positions
+- **"Câu Chuyện / The Story"** section added to Reading Synthesis between Opening and Thread
+- Thread section now integrates reversed card context inline (not separate)
+- Element Analysis now includes arc narratives and conflict warnings from `ELEMENT_FLOW_ANALYSIS`
+- All new data uses `{vi: ..., en: ...}` bilingual format with `typeof` guards
+
+#### Task 17 — Action Steps cụ thể theo context ✅
+- **CARD_ACTION_TEMPLATES**: 78 cards × 3 positional roles (`past_lesson`, `present_action`, `future_prep`) × 2 languages = 468 entries
+- Each template is specific to the card's energy and its role in the spread (not generic)
+- **Rewrote `generateActionSteps()`**: now accepts all 3 drawn cards (not just future card)
+- **4 steps instead of 2**: Past lesson → Present action → Future preparation → Question-model advice
+- Each step shows the card name in bold before the action text
+- Graceful fallback with `typeof CARD_ACTION_TEMPLATES` guard + generic keyword-based steps if templates unavailable
+- All bilingual with `{vi: ..., en: ...}` format
+
+#### Task 19 — Energy & Confidence Badge Improvements ✅
+- **ENERGY_TYPES** expanded: each type now has a `desc` field with bilingual explanatory text (5 types × 2 languages)
+- **CONFIDENCE_LEVELS** expanded: each level now has a `reasons` field with bilingual default reasoning
+- **CONFIDENCE_REASONS**: 8 specific reason templates (aligned_upright, dominant_clear, future_upright, mixed_reversals, future_reversed, scattered_elements, all_reversed, no_dominant)
+- **READING_TONES**: 4 tones (Optimistic/Cautionary/Transformative/Contemplative) × icon + desc × 2 languages
+- **Rewrote `determineConfidence()`**: now returns `{ key, reasons[] }` with dynamic reason collection based on card state
+- **New `determineReadingTone()`**: analyzes transformation cards, reversal count, contemplative cards, and elemental dominance
+- **Badge rendering upgraded**: from inline labels to expanded card layout with descriptions, reason lists, and Reading Tone badge
+- **New CSS**: `.synth-badges-expanded`, `.synth-badge-card`, `.badge-header`, `.badge-desc`, `.badge-reasons`
+- All bilingual with `{vi: ..., en: ...}` format and `typeof` guards for graceful degradation
+
+#### Task 18 — Reflection Questions ✅
+- **REFLECTION_QUESTIONS**: 78 cards × 2–3 questions × 2 languages (~856 lines) in `tarot-data.js`
+- Major Arcana: 3 questions per card (deep, archetypal), Minor Arcana: 2–3 questions per card (practical, suit-themed)
+- Displayed below each card's reading section in `showReading()` with `typeof REFLECTION_QUESTIONS` guard
+- Teal-accented styling (`.r-reflection`, `.r-reflection-label`, `.r-reflection-q`) with left border and subtle background
+- Bilingual labels: "❓ Suy Ngẫm" / "❓ Reflect"
+
 ---
 
 ## III. INCOMPLETE TASKS (Priority: High → Low)
-
-### 🔴 HIGH PRIORITY
-
-#### Task 16 — Nâng cấp Reading Synthesis `generateConclusion()` — PLANNED
-**Why:** "Sợi Chỉ Đỏ" (Thread) section only has 32 interaction patterns → many 3-card combos fall through to generic element fallback. No true narrative arc connecting Past→Present→Future as a story.
-**Scope:** `tarot-data.js` + `tarot-example.html`
-**Work needed:**
-- Add ~40 more `CARD_INTERACTIONS` patterns (Court↔Court, Ace↔Ten, same-number-across-suits, Major↔Minor specifics)
-- Add element flow analysis (fire→water = passion cooling) and element conflict detection
-- Integrate reversed card context into Thread narrative (currently reversed info is separate)
-- Add "The Story" section that reads as continuous narrative across 3 positions
-
-#### Task 17 — Action Steps cụ thể theo context — PLANNED
-**Why:** Currently only 2 generic steps. Not linked to specific cards drawn.
-**Scope:** `tarot-data.js` + `tarot-example.html`
-**Work needed:**
-- Increase to 3–4 steps: Past lesson → Present action → Future preparation → Model-specific advice
-- Create `CARD_ACTION_TEMPLATES` (78 cards × 3 roles: past_lesson, present_action, future_prep)
-- Each step references the drawn card by name
-
-#### Task 18 — Reflection Questions — PLANNED
-**Why:** Readings are passive — user reads but doesn't engage. Reflection questions help users connect the reading to their life.
-**Scope:** `tarot-data.js` + `tarot-example.html`
-**Work needed:**
-- Add `REFLECTION_QUESTIONS`: 78 cards × 2–3 questions × 2 languages
-- Display below each card's reading section
-- Example: *"Bạn đang cố kiểm soát điều gì mà thực ra cần buông bỏ?"*
-
-#### Task 19 — Energy & Confidence Badge Improvements — PLANNED
-**Why:** Current badges are too terse (single word/icon). No explanation of why.
-**Scope:** `tarot-data.js` + `tarot-example.html`
-**Work needed:**
-- Add descriptions to each energy type (not just icon+label)
-- Confidence level shows reasoning (e.g., "High — cards aligned, no reversals")
-- Add "Reading Tone" badge: Optimistic / Cautionary / Transformative / Contemplative
 
 ### 🟡 MEDIUM PRIORITY
 
@@ -242,6 +245,7 @@ tarot-example.html:
                                                  ├─ findInteraction()
                                                  ├─ determineEnergy()
                                                  ├─ determineConfidence()
+                                                 ├─ determineReadingTone()
                                                  └─ generateActionSteps()
 ```
 
@@ -257,8 +261,15 @@ tarot-example.html:
 | `REVERSED_MEANINGS` | tarot-data.js:5 | 78 cards |
 | `MAJOR_POSITION_INTERP` | tarot-data.js:330 | 22 × 3 positions |
 | `MINOR_POSITION_INTERP` | tarot-data.js:642 | 56 × 3 positions |
-| `CARD_INTERACTIONS` | tarot-data.js:1015 | 32 patterns |
-| `ELEMENT_TRANSITIONS` | tarot-data.js:1190 | 20 transitions |
+| `CARD_INTERACTIONS` | tarot-data.js:1015 | ~65 patterns (expanded Task 16) |
+| `ELEMENT_TRANSITIONS` | tarot-data.js | 20 transitions |
+| `ELEMENT_CONFLICT_PAIRS` | tarot-data.js | 4 pairs |
+| `ELEMENT_FLOW_ANALYSIS` | tarot-data.js | 4 conflicts + 18 arcs |
+| `NARRATIVE_TEMPLATES` | tarot-data.js | 5 positions × 6 types + transitions |
+| `CARD_ACTION_TEMPLATES` | tarot-data.js | 78 cards × 3 roles × 2 languages |
+| `READING_TONES` | tarot-data.js | 4 tones (icon + desc × 2 languages) |
+| `CONFIDENCE_REASONS` | tarot-data.js | 8 specific reason templates × 2 languages |
+| `REFLECTION_QUESTIONS` | tarot-data.js | 78 cards × 2–3 questions × 2 languages |
 | `TU_VI_POS` | tuvi-data.js:19 | 5 Cục × 30 days |
 | `TU_HOA_TABLE` | tuvi-data.js:186 | 10 Can × 4 stars |
 | `CACH_CUC_PATTERNS` | tuvi-data.js:420 | 33 patterns |
@@ -285,8 +296,9 @@ tarot-example.html:
 | Tarot Data Tables | 100% ✅ |
 | Tarot Card Meanings | 100% ✅ (rewritten, specific & actionable) |
 | Tarot Position Interp | 100% ✅ (Major + Minor covered) |
-| Tarot Synthesis Engine | 70% — needs narrative arc, more interactions, integrated reversed context |
-| Tarot Action Steps | 50% — works but generic (2 steps, not card-specific) |
+| Tarot Synthesis Engine | 100% ✅ — narrative arc, 65 interactions, element flow, reversed integration, badge descriptions & reasoning complete |
+| Tarot Action Steps | 100% ✅ — 4 card-specific steps per reading (past lesson, present action, future prep, model advice) |
+| Tarot Reflection Questions | 100% ✅ — 78 cards × 2–3 questions × bilingual, displayed below each card reading |
 | Responsive Design | 0% — not started |
 | Authentication | 0% — not started |
 | Bilingual QA | 95% — known card-name issue in tarot Vietnamese mode |
