@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✦ Tử Vi Đẩu Số — Purple Star Astrology</title>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href=".support/natal_chart.css">
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<canvas id="starfield"></canvas>
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="nebula nebula-3"></div>
+
+<nav>
+  <a class="nav-logo" href="index.html">✦ Celestial Sanctum</a>
+  <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="tarot-example.html">Tarot</a></li>
+    <li><a href="natal_chart.html" class="active">Astrology</a></li>
+    <li><a href="#">Coming Soon</a></li>
+  </ul>
+</nav>
+
+<button class="lang-toggle" id="langBtn" onclick="toggleLang()">🌐 Tiếng Việt</button>
+
+<div class="wrap" id="mainContent">
+
+  <header class="hero">
+    <p class="ornament">☆ ✦ ☆</p>
+    <h1>Tử Vi Đẩu Số</h1>
+    <p class="subtitle">Purple Star Astrology · Your Celestial Blueprint</p>
+    <p class="hero-desc" data-en="Born from the Song Dynasty wisdom of the sage Trần Đoàn, Tử Vi Đẩu Số maps the heavens at the moment of your birth — distributing 14 ruling stars across 12 celestial palaces to reveal the architecture of your fate, from the depths of your soul to the arc of your fortune." data-vi="Khởi nguồn từ trí tuệ thời Tống của bậc hiền triết Trần Đoàn, Tử Vi Đẩu Số vẽ nên bản đồ thiên mệnh tại khoảnh khắc bạn chào đời — phân bổ 14 chính tinh trên 12 cung mệnh để hé lộ kiến trúc số phận, từ cõi sâu thẳm tâm hồn đến đường cong vận mệnh.">
+      Born from the Song Dynasty wisdom of the sage Trần Đoàn, Tử Vi Đẩu Số maps the heavens at the moment of your birth —
+      distributing 14 ruling stars across 12 celestial palaces to reveal the architecture of your fate,
+      from the depths of your soul to the arc of your fortune.
+    </p>
+  </header>
+
+  <div class="moon-strip" aria-hidden="true">🌑 🌒 🌓 🌔 🌕 🌖 🌗 🌘 🌑</div>
+
+  <div class="divider"><span class="divider-line"></span><span class="divider-sym">✦</span><span class="divider-line"></span></div>
+
+  <!-- Birth Data Form -->
+  <div class="form-section">
+    <p class="form-title" data-en="Enter Your Birth Data" data-vi="Nhập Thông Tin Ngày Sinh">Enter Your Birth Data</p>
+    <form id="birthForm" class="form-grid" autocomplete="off">
+      <div class="form-group full">
+        <label for="fname" data-en="Full Name" data-vi="Họ và Tên">Họ và Tên (Full Name)</label>
+        <input type="text" id="fname" placeholder="Nhập tên của bạn…" required>
+      </div>
+      <div class="form-group">
+        <label for="bdate" data-en="Birth Date" data-vi="Ngày Sinh">Ngày Sinh (Birth Date)</label>
+        <input type="date" id="bdate" required>
+      </div>
+      <div class="form-group full" id="lunarToggleGroup">
+        <label class="lunar-toggle-label">
+          <input type="checkbox" id="manualLunar" onchange="toggleManualLunar()"> <span data-en="I know the lunar date" data-vi="Tôi biết ngày âm lịch">Tôi biết ngày âm lịch (I know the lunar date)</span>
+        </label>
+      </div>
+      <div id="lunarFields">
+        <div class="lunar-fields-grid">
+          <div class="form-group">
+            <label for="lunarMonth" data-en="Lunar Month" data-vi="Tháng Âm">Tháng Âm</label>
+            <select id="lunarMonth">
+              <option value="">—</option>
+              <option value="1">Tháng 1</option><option value="2">Tháng 2</option><option value="3">Tháng 3</option>
+              <option value="4">Tháng 4</option><option value="5">Tháng 5</option><option value="6">Tháng 6</option>
+              <option value="7">Tháng 7</option><option value="8">Tháng 8</option><option value="9">Tháng 9</option>
+              <option value="10">Tháng 10</option><option value="11">Tháng 11</option><option value="12">Tháng 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="lunarDay" data-en="Lunar Day" data-vi="Ngày Âm">Ngày Âm</label>
+            <input type="number" id="lunarDay" min="1" max="30" placeholder="1-30">
+          </div>
+          <div class="form-group">
+            <label for="lunarYear" data-en="Lunar Year" data-vi="Năm Âm">Năm Âm</label>
+            <input type="number" id="lunarYear" min="1900" max="2100" placeholder="1990">
+          </div>
+        </div>
+      </div>
+      <div id="lunarDisplay"></div>
+      <div class="form-group">
+        <label for="bhour" data-en="Birth Hour" data-vi="Giờ Sinh">Giờ Sinh (Birth Hour)</label>
+        <select id="bhour" required>
+          <option value="">— Chọn giờ sinh —</option>
+          <option value="0">Giờ Tý (子) — 23:00–01:00</option>
+          <option value="1">Giờ Sửu (丑) — 01:00–03:00</option>
+          <option value="2">Giờ Dần (寅) — 03:00–05:00</option>
+          <option value="3">Giờ Mão (卯) — 05:00–07:00</option>
+          <option value="4">Giờ Thìn (辰) — 07:00–09:00</option>
+          <option value="5">Giờ Tỵ (巳) — 09:00–11:00</option>
+          <option value="6">Giờ Ngọ (午) — 11:00–13:00</option>
+          <option value="7">Giờ Mùi (未) — 13:00–15:00</option>
+          <option value="8">Giờ Thân (申) — 15:00–17:00</option>
+          <option value="9">Giờ Dậu (酉) — 17:00–19:00</option>
+          <option value="10">Giờ Tuất (戌) — 19:00–21:00</option>
+          <option value="11">Giờ Hợi (亥) — 21:00–23:00</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label data-en="Gender" data-vi="Giới Tính">Giới Tính (Gender)</label>
+        <div class="radio-row">
+          <label><input type="radio" name="gender" value="M" required> Nam (Male)</label>
+          <label><input type="radio" name="gender" value="F"> Nữ (Female)</label>
+        </div>
+      </div>
+      <button type="submit" class="cast-btn" data-en="✦ &nbsp; Cast Your Chart &nbsp; ✦" data-vi="✦ &nbsp; Lập Lá Số &nbsp; ✦">✦ &nbsp; Lập Lá Số &nbsp; ✦</button>
+    </form>
+  </div>
+
+  <!-- Chart Area -->
+  <div id="chart-area">
+    <div class="chart-header">
+      <h2 id="chart-title">Lá Số Tử Vi</h2>
+      <p id="chart-sub"></p>
+    </div>
+    <div class="chart-grid" id="chartGrid"></div>
+    <div class="chart-legend">
+      <span class="legend-label" data-en="Brightness:" data-vi="Sáng độ:">Sáng độ:</span>
+      <span>M: Miếu</span> <span>V: Vượng</span> <span>Đ: Đắc</span> <span>B: Bình</span> <span>H: Hãm</span>
+      <span class="legend-pipe">|</span>
+      <div class="legend-item"><span class="legend-swatch s-kim"></span> Kim</div>
+      <div class="legend-item"><span class="legend-swatch s-moc"></span> Mộc</div>
+      <div class="legend-item"><span class="legend-swatch s-thuy"></span> Thủy</div>
+      <div class="legend-item"><span class="legend-swatch s-hoa"></span> Hỏa</div>
+      <div class="legend-item"><span class="legend-swatch s-tho"></span> Thổ</div>
+    </div>
+  </div>
+
+  <!-- Daily Guidance -->
+  <div id="guidance-area">
+    <div class="divider"><span class="divider-line"></span><span class="divider-sym">☀</span><span class="divider-line"></span></div>
+    <p class="interp-title" data-en="Daily Guidance for Tomorrow" data-vi="Gợi Ý Cho Ngày Mai" id="guidance-title">Daily Guidance for Tomorrow</p>
+    <div id="guidance-content"></div>
+  </div>
+
+  <!-- Interpretations -->
+  <div id="interp-area">
+    <div class="divider"><span class="divider-line"></span><span class="divider-sym">☽</span><span class="divider-line"></span></div>
+    <p class="interp-title" data-en="Chart Interpretations" data-vi="Luận Giải Tổng Quan">Luận Giải Tổng Quan</p>
+    <div id="interp-list"></div>
+  </div>
+
+  <div id="tongluan-area">
+    <div class="divider"><span class="divider-line"></span><span class="divider-sym">✦</span><span class="divider-line"></span></div>
+    <p class="interp-title" data-en="Overall Synthesis" data-vi="Tổng Luận">Tổng Luận (Overall Synthesis)</p>
+    <div id="tongluan-content"></div>
+  </div>
+
+  <div class="divider"><span class="divider-line"></span><span class="divider-sym">✧</span><span class="divider-line"></span></div>
+
+  <!-- Knowledge Section -->
+  <div id="knowledge">
+    <p class="know-title" data-en="The Ancient Wisdom" data-vi="Tri Thức Cổ Xưa">The Ancient Wisdom</p>
+    <div class="know-grid">
+      <div class="know-card">
+        <div class="know-icon">🌟</div>
+        <h4 data-en="What is Tử Vi Đẩu Số?" data-vi="Tử Vi Đẩu Số là gì?">What is Tử Vi Đẩu Số?</h4>
+        <p data-en="Originating in the Song Dynasty and attributed to the sage Trần Đoàn (Hi Di), Purple Star Astrology is the supreme art of Mệnh Học — mapping destiny through the movements of celestial bodies. It ranks alongside Bát Tự (Four Pillars) as the most revered system of fate-reading in Eastern metaphysics." data-vi="Khởi nguồn từ đời Tống, được cho là do bậc hiền triết Trần Đoàn (Hi Di) sáng tạo, Tử Vi Đẩu Số là nghệ thuật tối thượng của Mệnh Học — vẽ nên bản đồ số mệnh qua chuyển động của các thiên thể. Nó đứng ngang hàng với Bát Tự (Tứ Trụ) như một trong những hệ thống luận mệnh được tôn kính nhất trong huyền học phương Đông.">Originating in the Song Dynasty and attributed to the sage Trần Đoàn (Hi Di), Purple Star Astrology is the supreme art of Mệnh Học — mapping destiny through the movements of celestial bodies. It ranks alongside Bát Tự (Four Pillars) as the most revered system of fate-reading in Eastern metaphysics.</p>
+      </div>
+      <div class="know-card">
+        <div class="know-icon">⚝</div>
+        <h4 data-en="The 14 Main Stars" data-vi="14 Chính Tinh">The 14 Main Stars</h4>
+        <p data-en="Fourteen Chính Tinh govern the chart: the imperial Tử Vi, strategic Thiên Cơ, radiant Thái Dương, resolute Vũ Khúc, gentle Thiên Đồng, ambitious Liêm Trinh, bountiful Thiên Phủ, luminous Thái Âm, charismatic Tham Lang, eloquent Cự Môn, noble Thiên Tướng, wise Thiên Lương, fierce Thất Sát, and revolutionary Phá Quân." data-vi="Mười bốn Chính Tinh chi phối lá số: Tử Vi đế vương, Thiên Cơ mưu lược, Thái Dương rực rỡ, Vũ Khúc cương nghị, Thiên Đồng ôn hòa, Liêm Trinh nhiệt huyết, Thiên Phủ phúc hậu, Thái Âm sáng suốt, Tham Lang quyến rũ, Cự Môn hùng biện, Thiên Tướng cao quý, Thiên Lương uyên bác, Thất Sát dũng mãnh, và Phá Quân cách mạng.">Fourteen Chính Tinh govern the chart: the imperial Tử Vi, strategic Thiên Cơ, radiant Thái Dương, resolute Vũ Khúc, gentle Thiên Đồng, ambitious Liêm Trinh, bountiful Thiên Phủ, luminous Thái Âm, charismatic Tham Lang, eloquent Cự Môn, noble Thiên Tướng, wise Thiên Lương, fierce Thất Sát, and revolutionary Phá Quân.</p>
+      </div>
+      <div class="know-card">
+        <div class="know-icon">🏛</div>
+        <h4 data-en="The 12 Palaces" data-vi="12 Cung">The 12 Palaces</h4>
+        <p data-en="Each palace represents a domain of life — from Mệnh (the self) and Tài Bạch (wealth), to Phu Thê (marriage) and Quan Lộc (career). Stars in each palace interact through Ngũ Hành relationships, creating unique Cách Cục patterns that define your potential." data-vi="Mỗi cung đại diện cho một lĩnh vực trong đời sống — từ Mệnh (bản thân) và Tài Bạch (tài lộc), đến Phu Thê (hôn nhân) và Quan Lộc (sự nghiệp). Các sao trong mỗi cung tương tác qua quan hệ Ngũ Hành, tạo nên những Cách Cục độc đáo xác định tiềm năng của bạn.">Each palace represents a domain of life — from Mệnh (the self) and Tài Bạch (wealth), to Phu Thê (marriage) and Quan Lộc (career). Stars in each palace interact through Ngũ Hành relationships, creating unique Cách Cục patterns that define your potential.</p>
+      </div>
+      <div class="know-card">
+        <div class="know-icon">🔄</div>
+        <h4 data-en="Tứ Hóa — Four Transformations" data-vi="Tứ Hóa — Bốn Biến Hóa">Tứ Hóa — Four Transformations</h4>
+        <p data-en="The Tứ Hóa are energy modifiers based on your birth year's Heavenly Stem: Hóa Lộc brings abundance, Hóa Quyền grants authority, Hóa Khoa bestows wisdom, while Hóa Kỵ introduces friction — the universe's balancing force." data-vi="Tứ Hóa là các yếu tố biến đổi năng lượng dựa trên Thiên Can năm sinh: Hóa Lộc mang đến tài lộc, Hóa Quyền ban cho quyền lực, Hóa Khoa ban tặng trí tuệ danh tiếng, còn Hóa Kỵ tạo ra ma sát — lực cân bằng của vũ trụ.">The Tứ Hóa are energy modifiers based on your birth year's Heavenly Stem: Hóa Lộc brings abundance, Hóa Quyền grants authority, Hóa Khoa bestows wisdom, while Hóa Kỵ introduces friction — the universe's balancing force.</p>
+      </div>
+      <div class="know-card">
+        <div class="know-icon">☯</div>
+        <h4 data-en="Roots in Kinh Dịch" data-vi="Gốc Rễ từ Kinh Dịch">Roots in Kinh Dịch</h4>
+        <p data-en="Tử Vi shares its philosophical DNA with the I Ching. Both rest upon Âm Dương and Ngũ Hành — the eternal dance of opposites and five elemental forces. The I Ching's principle of constant change lives in every Đại Hạn cycle." data-vi="Tử Vi chia sẻ nền tảng triết học với Kinh Dịch. Cả hai đều dựa trên Âm Dương và Ngũ Hành — điệu nhảy vĩnh hằng của các đối lập và năm hành. Nguyên lý Biến Dịch (thay đổi không ngừng) của Kinh Dịch hiện diện trong mọi chu kỳ Đại Hạn.">Tử Vi shares its philosophical DNA with the I Ching. Both rest upon Âm Dương and Ngũ Hành — the eternal dance of opposites and five elemental forces. The I Ching's principle of constant change lives in every Đại Hạn cycle.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>✦ &nbsp; The Celestial Sanctum &nbsp; · &nbsp; As above, so below &nbsp; ✦</footer>
+
+<script src=".support/lunar-data.js"></script>
+<script src=".support/tuvi-data.js"></script>
+<script src=".support/natal_chart.js"></script>
+</body>
+</html>

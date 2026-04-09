@@ -2,3 +2,6 @@ docs/
 instructions_documents/
 Test_Subject/
 trash_can/
+.gitignore
+CLAUDE.md
+MEMORY.md
