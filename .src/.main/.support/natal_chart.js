@@ -351,32 +351,34 @@ function computeThanCung(lunarMonth, hourIdx) {
 
 /* ── Derive Cục from (year Thiên Can + Mệnh cung Địa Chi) ── */
 function deriveCuc(canIdx, menhBranchIdx) {
-  // Traditional Tu Vi: pair year's Thiên Can with Mệnh cung's Địa Chi
-  // to find the Nạp Âm of that pair, then derive Cục from its Ngũ Hành.
+  // Step 1: Ngũ Thử Độn — find starting Thiên Can at Dần
+  // Giáp/Kỷ→Bính, Ất/Canh→Mậu, Bính/Tân→Canh, Đinh/Nhâm→Nhâm, Mậu/Quý→Giáp
+  const startCan = ((canIdx % 5) * 2 + 2) % 10;
 
-  // Step 1: Can and Chi must have same parity for a valid sexagenary pair
-  let adjustedCan = canIdx;
-  if ((canIdx % 2) !== (menhBranchIdx % 2)) {
-    // Different parity — use next Can (standard adjustment)
-    adjustedCan = (canIdx + 1) % 10;
-  }
+  // Step 2: Count from Dần to Mệnh cung → Thiên Can of Mệnh cung
+  const menhCungCan = (startCan + ((menhBranchIdx - 2 + 12) % 12)) % 10;
 
-  // Step 2: Compute the 60-cycle (Giáp Tý) index for this (Can, Chi) pair
-  // The sexagenary cycle index: ((can - chi) * 6 + chi) mapped to 0-59
-  // Simplified: each Nạp Âm covers 2 consecutive sexagenary entries
-  // napAmPairIdx gives us which Nạp Âm group (0-29)
-  const napAmPairIdx = ((adjustedCan % 10) * 6 + Math.floor(menhBranchIdx / 2)) % 30;
-
-  // Step 3: Each Nạp Âm covers 2 entries in NAP_AM_TABLE
-  const napAmForCuc = NAP_AM_TABLE[napAmPairIdx * 2];
+  // Step 3: Sexagenary index → Nạp Âm → Ngũ Hành → Cục
+  const sexIdx = ((6 * menhCungCan - 5 * menhBranchIdx) % 60 + 60) % 60;
+  const napAmForCuc = NAP_AM_TABLE[sexIdx];
   const cucHanh = getNapAmHanh(napAmForCuc);
 
   // Step 4: Map element to Cục value
-  const cucValueMap = {Thủy: 2, Mộc: 3, Kim: 4, Thổ: 5, Hỏa: 6};
+  const cucValueMap = { Thủy: 2, Mộc: 3, Kim: 4, Thổ: 5, Hỏa: 6 };
   const cucValue = cucValueMap[cucHanh];
   const cuc = { vi: CUC_MAP[cucHanh], en: CUC_MAP_EN[cucHanh] };
 
   return { hanh: cucHanh, cucValue: cucValue, cuc: cuc };
+}
+
+/* ── Nạp Thiên Can for all 12 palaces via Ngũ Thử Độn ── */
+function napThienCan12Cung(canIdx) {
+  const startCan = ((canIdx % 5) * 2 + 2) % 10;
+  const result = new Array(12);
+  for (let branchIdx = 0; branchIdx < 12; branchIdx++) {
+    result[branchIdx] = (startCan + ((branchIdx - 2 + 12) % 12)) % 10;
+  }
+  return result;
 }
 
 /* Get star brightness using lookup table from tuvi-data.js, fallback to hash */
@@ -472,6 +474,7 @@ function generateChart(name, dateStr, hour, gender) {
   const napAmIdx = ((lunarYear - 4) % 60 + 60) % 60;
   const napAmRaw = NAP_AM_TABLE[napAmIdx] || 'Hải Trung Kim';
   const napAm = { vi: napAmRaw, en: getNapAmEn(napAmRaw) };
+  const banMenhHanh = getNapAmHanh(napAmRaw);
 
   const amDuong = { vi: canIdx % 2 === 0 ? 'Dương Nam/Nữ' : 'Âm Nam/Nữ', en: canIdx % 2 === 0 ? 'Yang' : 'Yin' };
   if (gender === 'M') {
@@ -488,7 +491,7 @@ function generateChart(name, dateStr, hour, gender) {
 
   /* ── Step 2b: Cục derivation from (year Can + Mệnh branch) ── */
   const cucInfo = deriveCuc(canIdx, menhPos);
-  const menhHanh = cucInfo.hanh;
+  const cucHanh = cucInfo.hanh;
   const cuc = cucInfo.cuc;
   const cucValue = cucInfo.cucValue;
 
@@ -514,6 +517,12 @@ function generateChart(name, dateStr, hour, gender) {
       isThan: branchIdx === thanPos
     });
   }
+
+  /* ── Step 4b: Nạp Thiên Can for each palace (Ngũ Thử Độn) ── */
+  const palaceCanArray = napThienCan12Cung(canIdx);
+  palaceData.forEach(p => {
+    p.canIdx = palaceCanArray[p.branchIdx];
+  });
 
   /* ── Step 5: Place Tử Vi from lookup table ── */
   let tuViBranch;
@@ -593,7 +602,7 @@ function generateChart(name, dateStr, hour, gender) {
 
   /* ── Step 8: Tràng Sinh cycle ── */
   if (typeof getTrangSinhCycle !== 'undefined') {
-    const tsCycle = getTrangSinhCycle(menhHanh, canIdx, gender);
+    const tsCycle = getTrangSinhCycle(cucHanh, canIdx, gender);
     tsCycle.forEach((item, i) => {
       const pIdx = palaceData.findIndex(p => p.branchIdx === item.branch);
       if (pIdx >= 0) palaceData[pIdx].trangSinh = item.phase;
@@ -667,7 +676,7 @@ function generateChart(name, dateStr, hour, gender) {
   const menhChu = palaceData[0].mainStars[0] || 'Thiên Tướng';
 
   return {
-    palaceData, menhHanh, thienCan, diaChi, menhPos, thanPos,
+    palaceData, cucHanh, banMenhHanh, thienCan, diaChi, menhPos, thanPos,
     tuanPos1, tuanPos2, trietPos1, trietPos2,
     year: gYear, month: gMonth, day: gDay,
     lunarYear, lunarMonth, lunarDay, canIdx, chiIdx,
@@ -677,7 +686,7 @@ function generateChart(name, dateStr, hour, gender) {
 
 /* ── Render Chart ── */
 function renderChart(chartData, name, dateStr, hour, gender) {
-  const { palaceData, menhHanh, thienCan, diaChi, tuanPos1, tuanPos2, trietPos1, trietPos2, napAm, cuc, amDuong, menhChu, year } = chartData;
+  const { palaceData, cucHanh, banMenhHanh, thienCan, diaChi, tuanPos1, tuanPos2, trietPos1, trietPos2, napAm, cuc, amDuong, menhChu, year } = chartData;
   const grid = document.getElementById('chartGrid');
   grid.innerHTML = '';
 
@@ -732,8 +741,8 @@ function renderChart(chartData, name, dateStr, hour, gender) {
   cells[2][1] = { type: 'center', content: `
     <div class="cc-label" data-vi="Thông Tin" data-en="Profile">${isVi ? 'Thông Tin' : 'Profile'}</div>
     <div class="cc-detail" data-vi="${amDuong.vi}" data-en="${amDuong.en}">${isVi ? amDuong.vi : amDuong.en}</div>
+    <div class="cc-element-badge" data-vi="Mệnh ${banMenhHanh} · ${EL_NAMES[banMenhHanh]}" data-en="${EL_NAMES[banMenhHanh]} Destiny">${isVi ? `Mệnh ${banMenhHanh} · ${EL_NAMES[banMenhHanh]}` : `${EL_NAMES[banMenhHanh]} Destiny`}</div>
     <div class="cc-detail-dim" data-vi="${napAm.vi}" data-en="${napAm.en}">${isVi ? napAm.vi : napAm.en}</div>
-    <div class="cc-element-badge" data-vi="${menhHanh} · ${EL_NAMES[menhHanh]}" data-en="${EL_NAMES[menhHanh]} Destiny">${isVi ? `${menhHanh} · ${EL_NAMES[menhHanh]}` : `${EL_NAMES[menhHanh]} Destiny`}</div>
     <div class="cc-detail-dim cc-detail-mt" data-vi="${cuc.vi}" data-en="${cuc.en}">${isVi ? cuc.vi : cuc.en}</div>
   `};
   cells[2][2] = { type: 'center', content: `
@@ -879,12 +888,12 @@ function generateInterpretations(chartData) {
       }
       // Other empty palaces — Ngũ Hành interaction between Cục element and palace element
       if (p.palaceIdx !== 0 && typeof analyzeNguHanh !== 'undefined' && typeof NGU_HANH_EFFECTS !== 'undefined') {
-        const rel = analyzeNguHanh(chartData.menhHanh, p.element);
+        const rel = analyzeNguHanh(chartData.cucHanh, p.element);
         if (rel && NGU_HANH_EFFECTS[rel]) {
           const eff = NGU_HANH_EFFECTS[rel];
           text += isVi
-            ? `<br><em>Ngũ Hành (Cục ${chartData.menhHanh} — Cung ${p.element}): ${eff.vi}</em>`
-            : `<br><em>Five Elements (Cục ${chartData.menhHanh} — Palace ${p.element}): ${eff.en}</em>`;
+            ? `<br><em>Ngũ Hành (Cục ${chartData.cucHanh} — Cung ${p.element}): ${eff.vi}</em>`
+            : `<br><em>Five Elements (Cục ${chartData.cucHanh} — Palace ${p.element}): ${eff.en}</em>`;
         }
       }
     }
@@ -988,7 +997,7 @@ function generateInterpretations(chartData) {
 
 /* ── Tổng Luận (Overall Synthesis) ── */
 function generateTongLuan(chartData) {
-  const { palaceData, menhHanh, thienCan, diaChi, cuc, menhChu, canIdx, direction } = chartData;
+  const { palaceData, cucHanh, banMenhHanh, thienCan, diaChi, cuc, menhChu, canIdx, direction } = chartData;
   const isVi = currentLang === 'vi';
   const area = document.getElementById('tongluan-area');
   const content = document.getElementById('tongluan-content');
@@ -1001,7 +1010,7 @@ function generateTongLuan(chartData) {
   const yearNameEn = `${thienCan.en} ${diaChi.en}`;
   const yearStr = isVi ? yearNameVi : yearNameEn;
   const cucStr = isVi ? cuc.vi : cuc.en;
-  html += `<p><strong>${isVi ? 'Lá số' : 'Chart'}:</strong> ${yearStr} · ${cucStr} · ${isVi ? 'Mệnh' : 'Destiny'} ${menhHanh} · ${isVi ? 'Mệnh chủ' : 'Ruling star'}: ${menhChu}</p>`;
+  html += `<p><strong>${isVi ? 'Lá số' : 'Chart'}:</strong> ${yearStr} · ${cucStr} · ${isVi ? 'Bản Mệnh' : 'Destiny'} ${banMenhHanh} · ${isVi ? 'Mệnh chủ' : 'Ruling star'}: ${menhChu}</p>`;
 
   // Cách Cục recognition
   if (typeof CACH_CUC_PATTERNS !== 'undefined') {
@@ -1083,11 +1092,11 @@ function generateTongLuan(chartData) {
 
 /* ── Daily Guidance Generator ── */
 function generateGuidance(chartData) {
-  const { palaceData, menhHanh } = chartData;
+  const { palaceData, cucHanh, banMenhHanh } = chartData;
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dayOfWeek = tomorrow.getDay();
-  const dayHash = seedHash(menhHanh + palaceData[0].mainStars.join('') + tomorrow.toISOString().slice(0,10));
+  const dayHash = seedHash(banMenhHanh + palaceData[0].mainStars.join('') + tomorrow.toISOString().slice(0,10));
   const grng = mulberry32(dayHash);
 
   const DOS = [
@@ -1226,8 +1235,8 @@ function generateGuidance(chartData) {
     </div>
     <div class="guidance-card dont-card">
       <h3>⚠ <span data-en="What You Should Avoid" data-vi="Nên Tránh">${isVi ? 'Nên Tránh' : 'What You Should Avoid'}</span></h3>
-      <p class="guidance-date" data-en="Based on your ${menhHanh} (${EL_NAMES[menhHanh]}) destiny" data-vi="Dựa trên mệnh ${menhHanh} (${EL_NAMES[menhHanh]}) của bạn">
-        ${isVi ? `Dựa trên mệnh ${menhHanh} (${EL_NAMES[menhHanh]}) của bạn` : `Based on your ${menhHanh} (${EL_NAMES[menhHanh]}) destiny`}
+      <p class="guidance-date" data-en="Based on your ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) destiny" data-vi="Dựa trên mệnh ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) của bạn">
+        ${isVi ? `Dựa trên mệnh ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) của bạn` : `Based on your ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) destiny`}
       </p>
       <ul>${(isVi ? dontsVi : dontsEn).map(d => `<li>${d}</li>`).join('')}</ul>
     </div>
