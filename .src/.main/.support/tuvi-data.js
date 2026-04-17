@@ -1828,6 +1828,41 @@ const EMPTY_PALACE_MEANINGS = {
   },
 };
 
+/* ── Tuần/Triệt age-dependent weight constants ── */
+const TUAN_TRIET_WEIGHT = {
+  triet_dau:  { tienVan: 1.0, hauVan: 0.4 },
+  triet_duoi: { tienVan: 0.8, hauVan: 0.2 },
+  tuan_dau:   { tienVan: 0.4, hauVan: 1.0 },
+  tuan_duoi:  { tienVan: 0.2, hauVan: 0.8 }
+};
+
+/* ── Tứ Hóa Mapping: Thiên Can → 4 stars receiving Hóa ── */
+const TU_HOA_MAP = [
+  /* Giáp(0) */ { loc:'Liêm Trinh',  quyen:'Phá Quân',   khoa:'Vũ Khúc',    ky:'Thái Dương'  },
+  /* Ất(1)   */ { loc:'Thiên Cơ',    quyen:'Thiên Lương', khoa:'Tử Vi',       ky:'Thái Âm'     },
+  /* Bính(2) */ { loc:'Thiên Đồng',  quyen:'Thiên Cơ',    khoa:'Văn Xương',   ky:'Liêm Trinh'  },
+  /* Đinh(3) */ { loc:'Thái Âm',     quyen:'Thiên Đồng',  khoa:'Thiên Cơ',    ky:'Cự Môn'      },
+  /* Mậu(4)  */ { loc:'Tham Lang',   quyen:'Thái Âm',     khoa:'Hữu Bật',     ky:'Thiên Cơ'    },
+  /* Kỷ(5)   */ { loc:'Vũ Khúc',     quyen:'Tham Lang',   khoa:'Thiên Lương', ky:'Văn Khúc'    },
+  /* Canh(6) */ { loc:'Thái Dương',  quyen:'Vũ Khúc',     khoa:'Thái Âm',     ky:'Thiên Đồng'  },
+  /* Tân(7)  */ { loc:'Cự Môn',      quyen:'Thái Dương',  khoa:'Văn Khúc',    ky:'Văn Xương'   },
+  /* Nhâm(8) */ { loc:'Thiên Lương', quyen:'Tử Vi',       khoa:'Tả Phụ',      ky:'Vũ Khúc'     },
+  /* Quý(9)  */ { loc:'Phá Quân',    quyen:'Cự Môn',      khoa:'Thái Âm',     ky:'Tham Lang'   }
+];
+
+/* ── Phi Cung Interpretation Templates ── */
+const PHI_CUNG_INTERPRETATIONS = {
+  "ky_menh_tai":   { vi: "Phải lao động cật lực mới có tiền, nhưng sự tích lũy rất bền vững", en: "Must work hard for money, but accumulation is very stable" },
+  "ky_tai_dien":   { vi: "Tiền bạc kiếm được đổ vào bất động sản, tài sản cố định", en: "Earnings flow into real estate and fixed assets" },
+  "ky_menh_quan":  { vi: "Sự nghiệp là nguồn áp lực lớn nhất, nhưng cũng là động lực phấn đấu", en: "Career is the biggest pressure source, but also the motivation to strive" },
+  "loc_menh_tai":  { vi: "Dòng tiền đến dễ dàng, có duyên với kinh doanh buôn bán", en: "Cash flow comes easily, natural affinity for business" },
+  "loc_menh_quan": { vi: "Sự nghiệp thuận lợi, dễ được cất nhắc thăng tiến", en: "Smooth career path, easily promoted" },
+  "loc_tai_dien":  { vi: "Biết cách biến tiền thành tài sản, giàu có bền vững", en: "Knows how to convert money into assets, sustainable wealth" },
+};
+
+/* Palace name lookup */
+const PALACE_NAMES = ['Mệnh','Phụ Mẫu','Phúc Đức','Điền Trạch','Quan Lộc','Nô Bộc','Thiên Di','Tật Ách','Tài Bạch','Tử Tức','Phu Thê','Huynh Đệ'];
+
 // =============================================================================
 // Loading verification (updated)
 // =============================================================================

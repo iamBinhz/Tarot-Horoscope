@@ -381,6 +381,532 @@ function napThienCan12Cung(canIdx) {
   return result;
 }
 
+/* ── Find palace index containing a specific star ── */
+function findStarPalace(palaceData, starName) {
+  for (let i = 0; i < 12; i++) {
+    const allStars = [...palaceData[i].mainStars, ...palaceData[i].auxStars];
+    if (allStars.includes(starName)) return i;
+  }
+  return -1;
+}
+
+/* ── Build Phi Cung Hóa Tượng directed graph ── */
+function buildPhiCungGraph(palaceData) {
+  if (typeof TU_HOA_MAP === 'undefined') return null;
+
+  const edges = [];
+  const HOA_TYPES = ['loc', 'quyen', 'khoa', 'ky'];
+
+  for (let i = 0; i < 12; i++) {
+    const can = palaceData[i].canIdx;
+    if (can === undefined) continue;
+    const tuHoa = TU_HOA_MAP[can];
+    for (const hoa of HOA_TYPES) {
+      const starName = tuHoa[hoa];
+      const targetPalace = findStarPalace(palaceData, starName);
+      if (targetPalace >= 0) {
+        edges.push({ from: i, to: targetPalace, hoa, star: starName, fromCan: can });
+      }
+    }
+  }
+
+  // Kỵ→Kỵ chains (depth ≤ 4)
+  const kyChuyenKy = [];
+  const locChuyenKy = [];
+  for (let start = 0; start < 12; start++) {
+    const kyChain = [start];
+    let current = start;
+    for (let depth = 0; depth < 4; depth++) {
+      const kyEdge = edges.find(e => e.from === current && e.hoa === 'ky');
+      if (!kyEdge || kyChain.includes(kyEdge.to)) break;
+      kyChain.push(kyEdge.to);
+      current = kyEdge.to;
+    }
+    if (kyChain.length >= 3) kyChuyenKy.push(kyChain);
+
+    // Lộc→Kỵ chains
+    const locEdge = edges.find(e => e.from === start && e.hoa === 'loc');
+    if (locEdge) {
+      const lkChain = [start, locEdge.to];
+      const kyFromLoc = edges.find(e => e.from === locEdge.to && e.hoa === 'ky');
+      if (kyFromLoc && !lkChain.includes(kyFromLoc.to)) {
+        lkChain.push(kyFromLoc.to);
+        locChuyenKy.push(lkChain);
+      }
+    }
+  }
+
+  return { edges, kyChuyenKy, locChuyenKy };
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PHASE 3 — Cách Cục + Đại Hạn/Tiểu Hạn + Tuần/Triệt
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── T3.2: Tam Hợp helper ── */
+function getTamHop(branchIdx) {
+  const groups = [[2,6,10],[3,7,11],[0,4,8],[1,5,9]]; // Dần-Ngọ-Tuất, Mão-Mùi-Hợi, Tý-Thìn-Thân, Sửu-Tỵ-Dậu
+  return groups.find(g => g.includes(branchIdx)) || [];
+}
+
+/* ── T3.2: Lục Hợp helper (mutual attraction pairs) ── */
+function getLucHop(branchIdx) {
+  const pairs = {0:11, 11:0, 1:10, 10:1, 2:9, 9:2, 3:8, 8:3, 4:7, 7:4, 5:6, 6:5};
+  return pairs[branchIdx] !== undefined ? [branchIdx, pairs[branchIdx]] : [branchIdx];
+}
+
+/* ── T3.2: evalHoaConvergence — check if required Hóa types converge in Mệnh tam hợp ── */
+function evalHoaConvergence(c, palaceData, phiCungGraph) {
+  if (!phiCungGraph) return null;
+  const menhBranch = palaceData[0].branchIdx;
+  const tamHop = getTamHop(menhBranch);
+  const required = c.required || ['loc','quyen','khoa'];
+  const hoaMap = {};
+  palaceData.forEach(p => {
+    p.hoa.forEach(h => {
+      const key = h.type.label === 'Hóa Lộc' ? 'loc'
+                : h.type.label === 'Hóa Quyền' ? 'quyen'
+                : h.type.label === 'Hóa Khoa' ? 'khoa'
+                : h.type.label === 'Hóa Kỵ' ? 'ky' : null;
+      if (key) hoaMap[key] = p.branchIdx;
+    });
+  });
+  const matched = required.filter(r => hoaMap[r] !== undefined && tamHop.includes(hoaMap[r]));
+  if (matched.length === required.length) {
+    return matched.map(r => hoaMap[r]);
+  }
+  return null;
+}
+
+/* ── T3.2: evalStarTriad — 3 specific stars in tam hợp positions ── */
+function evalStarTriad(c, palaceData) {
+  const stars = c.stars || [];
+  if (stars.length < 2) return null;
+  const branches = stars.map(s => {
+    for (const p of palaceData) {
+      if (p.mainStars.includes(s) || p.auxStars.includes(s)) return p.branchIdx;
+    }
+    return -1;
+  }).filter(b => b >= 0);
+  if (branches.length < 2) return null;
+  const tamHop0 = getTamHop(branches[0]);
+  if (branches.every(b => tamHop0.includes(b))) return branches;
+  return null;
+}
+
+/* ── T3.2: evalStarAtPalace — star at specific palace ── */
+function evalStarAtPalace(c, palaceData) {
+  const star = c.star;
+  const palaceIdx = c.palaceIdx !== undefined ? c.palaceIdx : 0; // default Mệnh
+  const p = palaceData[palaceIdx];
+  if (!p) return null;
+  if (p.mainStars.includes(star) || p.auxStars.includes(star)) return [p.branchIdx];
+  return null;
+}
+
+/* ── T3.2: evalStarBrightness — star achieves Miếu/Vượng ── */
+function evalStarBrightness(c, palaceData) {
+  if (typeof STAR_BRIGHTNESS_TABLE === 'undefined') return null;
+  const star = c.star;
+  const required = c.brightness || ['Miếu','Vượng'];
+  for (const p of palaceData) {
+    if (p.mainStars.includes(star)) {
+      const b = STAR_BRIGHTNESS_TABLE[star] && STAR_BRIGHTNESS_TABLE[star][p.branchIdx];
+      if (b && required.includes(b)) return [p.branchIdx];
+    }
+  }
+  return null;
+}
+
+/* ── T3.2: evaluatePattern wrapper ── */
+function evaluatePattern(pattern, palaceData, phiCungGraph) {
+  const c = pattern.condition;
+  // Support both function-based (legacy) and object-based (new) conditions
+  if (typeof c === 'function') {
+    // Legacy function-based condition from existing CACH_CUC_PATTERNS
+    const starPositions = {};
+    palaceData.forEach(p => p.mainStars.forEach(s => { starPositions[s] = p.branchIdx; }));
+    const auxPositions = {};
+    palaceData.forEach(p => p.auxStars.forEach(s => { auxPositions[s] = p.branchIdx; }));
+    const hoaMap = {};
+    palaceData.forEach(p => p.hoa.forEach(h => {
+      const key = h.type.label === 'Hóa Lộc' ? 'loc'
+                : h.type.label === 'Hóa Quyền' ? 'quyen'
+                : h.type.label === 'Hóa Khoa' ? 'khoa'
+                : h.type.label === 'Hóa Kỵ' ? 'ky' : null;
+      if (key) hoaMap[key] = p.branchIdx;
+    }));
+    try {
+      return c(starPositions, auxPositions, hoaMap, palaceData[0].branchIdx) ? [palaceData[0].branchIdx] : null;
+    } catch(e) { return null; }
+  }
+  // Object-based condition
+  if (!c || !c.type) return null;
+  switch (c.type) {
+    case 'hoa_convergence': return evalHoaConvergence(c, palaceData, phiCungGraph);
+    case 'star_triad':      return evalStarTriad(c, palaceData);
+    case 'star_at_palace':  return evalStarAtPalace(c, palaceData);
+    case 'star_brightness': return evalStarBrightness(c, palaceData);
+    default: return null;
+  }
+}
+
+/* ── T3.2: detectCachCuc — find all matching patterns ── */
+function detectCachCuc(palaceData, phiCungGraph) {
+  if (typeof CACH_CUC_PATTERNS === 'undefined') return [];
+  const matches = [];
+  for (const pattern of CACH_CUC_PATTERNS) {
+    const match = evaluatePattern(pattern, palaceData, phiCungGraph);
+    if (match) {
+      // Normalize: convert legacy rating strings to numeric scores
+      let numericRating = pattern.numericRating;
+      if (numericRating === undefined) {
+        const ratingMap = { auspicious: 75, mixed: 55, challenging: 40 };
+        numericRating = ratingMap[pattern.rating] || 50;
+        // Rank 1 = higher, rank 3 = lower
+        if (pattern.rank === 1) numericRating += 15;
+        if (pattern.rank === 3) numericRating -= 10;
+        numericRating = Math.max(0, Math.min(100, numericRating));
+      }
+      matches.push({ ...pattern, numericRating, matchedCungs: match });
+    }
+  }
+  return matches.sort((a, b) => b.numericRating - a.numericRating);
+}
+
+/* ── T3.3: getTuanTrietEffect — age-weighted Tuần/Triệt intensity ── */
+function getTuanTrietEffect(type, age) {
+  if (typeof TUAN_TRIET_WEIGHT === 'undefined') return 0.5;
+  const w = TUAN_TRIET_WEIGHT[type];
+  if (!w) return 0.5;
+  return age < 30 ? w.tienVan : w.hauVan;
+}
+
+/* ── T3.4: analyzeDaiHan — detailed analysis for a given age ── */
+function analyzeDaiHan(chartData, targetAge) {
+  if (!chartData || !chartData.palaceData) return null;
+  const { palaceData, cucHanh, canIdx, tuanPos1, tuanPos2, trietPos1, trietPos2 } = chartData;
+
+  // Find which palace the target age falls into
+  let daiHanPalace = null;
+  for (const p of palaceData) {
+    const parts = p.daiHan ? p.daiHan.split('–') : [];
+    if (parts.length === 2) {
+      const from = parseInt(parts[0]);
+      const to   = parseInt(parts[1]);
+      if (targetAge >= from && targetAge <= to) { daiHanPalace = p; break; }
+    }
+  }
+  if (!daiHanPalace) return null;
+
+  const palaceCanIdx = daiHanPalace.canIdx;
+  const palaceBranch = daiHanPalace.branchIdx;
+
+  // Lưu Tứ Hóa: Đại Hạn Thiên Can triggers additional Hóa
+  const liuSiHua = [];
+  if (typeof TU_HOA_MAP !== 'undefined' && palaceCanIdx !== undefined) {
+    const tuHoa = TU_HOA_MAP[palaceCanIdx];
+    if (tuHoa) {
+      const HOA_LABELS = { loc: 'Hóa Lộc', quyen: 'Hóa Quyền', khoa: 'Hóa Khoa', ky: 'Hóa Kỵ' };
+      ['loc','quyen','khoa','ky'].forEach(hoa => {
+        const starName = tuHoa[hoa];
+        // Find which palace holds this star
+        for (const p of palaceData) {
+          if (p.mainStars.includes(starName) || p.auxStars.includes(starName)) {
+            liuSiHua.push({ hoa: HOA_LABELS[hoa], star: starName, palace: p.vi, palaceEn: p.en });
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  // Tuần/Triệt impact on this palace
+  const hasTuan  = (palaceBranch === tuanPos1  || palaceBranch === tuanPos2);
+  const hasTriet = (palaceBranch === trietPos1 || palaceBranch === trietPos2);
+
+  // Determine Tuần/Triệt type (dau = leading, duoi = trailing)
+  let tuanTrietType = null;
+  if (hasTuan) {
+    tuanTrietType = (palaceBranch === tuanPos1) ? 'tuan_dau' : 'tuan_duoi';
+  } else if (hasTriet) {
+    tuanTrietType = (palaceBranch === trietPos1) ? 'triet_dau' : 'triet_duoi';
+  }
+  const tuanTrietWeight = tuanTrietType ? getTuanTrietEffect(tuanTrietType, targetAge) : 1.0;
+
+  // Element interaction between Cục element and palace element
+  let elementRelation = null;
+  if (typeof analyzeNguHanh !== 'undefined') {
+    elementRelation = analyzeNguHanh(cucHanh, daiHanPalace.element);
+  }
+
+  return {
+    palace: daiHanPalace,
+    age: targetAge,
+    daiHanRange: daiHanPalace.daiHan,
+    liuSiHua,
+    hasTuan,
+    hasTriet,
+    tuanTrietType,
+    tuanTrietWeight,
+    elementRelation,
+    mainStars: daiHanPalace.mainStars,
+    auxStars:  daiHanPalace.auxStars,
+    hoa:       daiHanPalace.hoa,
+  };
+}
+
+/* ── T3.5: analyzeTieuHan — annual Tiểu Hạn analysis ── */
+function analyzeTieuHan(chartData, currentYear) {
+  if (!chartData || !chartData.palaceData) return null;
+  const { palaceData, menhPos, chiIdx } = chartData;
+  const birthYear = chartData.year;
+  if (!birthYear) return null;
+
+  const age = currentYear - birthYear;
+
+  // Tiểu Hạn: starts at Dần (branchIdx=2) for male Yang / female Yin,
+  // or at Thân (branchIdx=8) for male Yin / female Yang, stepping +1/-1 per year
+  // Direction matches Đại Hạn direction
+  const direction = chartData.direction || 1;
+
+  // Start branch depends on gender + amDuong
+  const canIdx = chartData.canIdx;
+  const isYang = canIdx % 2 === 0;
+  const isMale = chartData.gender === 'M';
+  const isForward = (isYang && isMale) || (!isYang && !isMale);
+
+  // Tiểu Hạn starts at Dần(2) going forward, or Ngọ(6) going backward (from birth year Chi)
+  // Simplified: Tiểu Hạn year = menhPos, then add/subtract 1 per year from age 1
+  const tieuHanBranch = ((menhPos !== undefined ? menhPos : 0) + (isForward ? age - 1 : -(age - 1)) * direction + 120) % 12;
+
+  // Find palace at this branch
+  const tieuHanPalace = palaceData.find(p => p.branchIdx === tieuHanBranch);
+  if (!tieuHanPalace) return null;
+
+  // Lưu Niên Tứ Hóa from year Thiên Can
+  const yearCanIdx = ((currentYear - 4) % 10 + 10) % 10;
+  const liuNianHua = [];
+  if (typeof TU_HOA_MAP !== 'undefined') {
+    const tuHoa = TU_HOA_MAP[yearCanIdx];
+    if (tuHoa) {
+      const HOA_LABELS = { loc: 'Hóa Lộc', quyen: 'Hóa Quyền', khoa: 'Hóa Khoa', ky: 'Hóa Kỵ' };
+      ['loc','quyen','khoa','ky'].forEach(hoa => {
+        const starName = tuHoa[hoa];
+        for (const p of palaceData) {
+          if (p.mainStars.includes(starName) || p.auxStars.includes(starName)) {
+            liuNianHua.push({ hoa: HOA_LABELS[hoa], star: starName, palace: p.vi, palaceEn: p.en });
+            break;
+          }
+        }
+      });
+    }
+  }
+
+  return {
+    year: currentYear,
+    age,
+    palace: tieuHanPalace,
+    liuNianHua,
+    yearCanIdx,
+    tieuHanBranch,
+  };
+}
+
+/* ── T3.6: renderCachCucPanel — display matched Cách Cục patterns ── */
+function renderCachCucPanel(patterns, isVi) {
+  if (!patterns || patterns.length === 0) return '';
+
+  const items = patterns.map(p => {
+    // Determine badge class from rating and pattern type
+    let badgeClass = 'cach-cuc-trung';
+    const r = p.rating;
+    if (r === 'auspicious' || p.numericRating >= 70) badgeClass = 'cach-cuc-cat';
+    else if (r === 'challenging' || p.numericRating < 50) badgeClass = 'cach-cuc-hung';
+
+    const name    = isVi ? p.name : (p.nameEn || p.name);
+    const meaning = p.meaning ? (isVi ? p.meaning.vi : p.meaning.en) : '';
+    const score   = p.numericRating !== undefined ? p.numericRating : (p.rank ? (4 - p.rank) * 25 : 50);
+
+    return `
+      <div class="cach-cuc-item">
+        <div class="cach-cuc-info">
+          <span class="cach-cuc-name">${name}</span>
+          <span class="cach-cuc-desc">${meaning}</span>
+        </div>
+        <span class="cach-cuc-badge ${badgeClass}">${score}</span>
+      </div>`;
+  }).join('');
+
+  const title = isVi ? 'Cách Cục Nhận Diện' : 'Chart Patterns Detected';
+  return `<div class="cach-cuc-panel">
+    <h4 class="cach-cuc-title">${title}</h4>
+    ${items}
+  </div>`;
+}
+
+/* ── T3.7: renderDaiHanTimeline — horizontal scrollable 12-decade bar ── */
+function renderDaiHanTimeline(chartData, isVi) {
+  if (!chartData || !chartData.palaceData) return '';
+  const { palaceData } = chartData;
+  const currentYear = new Date().getFullYear();
+  const age = chartData.year ? currentYear - chartData.year : -1;
+
+  const periods = palaceData.map((p, i) => {
+    const parts = p.daiHan ? p.daiHan.split('–') : [];
+    const from  = parts.length === 2 ? parseInt(parts[0]) : 0;
+    const to    = parts.length === 2 ? parseInt(parts[1]) : 0;
+    const isActive = age >= from && age <= to;
+    const stars = [...p.mainStars, ...p.auxStars].slice(0, 3).join(', ') || (isVi ? 'Trống' : 'Empty');
+    const palaceName = isVi ? p.vi : (p.en || p.vi);
+
+    return `<div class="dai-han-period${isActive ? ' dai-han-active' : ''}"
+              data-period-idx="${i}"
+              onclick="toggleDaiHanDetail(this)">
+      <div class="dai-han-range">${p.daiHan}</div>
+      <div class="dai-han-palace">${palaceName}</div>
+      <div class="dai-han-stars">${stars}</div>
+    </div>`;
+  }).join('');
+
+  // Build detail panels (hidden by default, shown on click)
+  const details = palaceData.map((p, i) => {
+    const analysis = analyzeDaiHan(chartData, parseInt((p.daiHan || '0').split('–')[0]) + 5);
+    const parts = p.daiHan ? p.daiHan.split('–') : [];
+    const from  = parts.length === 2 ? parseInt(parts[0]) : 0;
+    const to    = parts.length === 2 ? parseInt(parts[1]) : 0;
+    const isActive = age >= from && age <= to;
+    let detailHtml = '';
+    if (analysis) {
+      const liuLines = analysis.liuSiHua.map(h =>
+        `<span class="dh-hoa">${h.hoa} ${h.star} → ${isVi ? h.palace : h.palaceEn}</span>`
+      ).join(' ');
+      const voidNote = analysis.hasTuan
+        ? (isVi ? `Tuần (trọng số ${(analysis.tuanTrietWeight * 100).toFixed(0)}%)` : `Tuần void (weight ${(analysis.tuanTrietWeight * 100).toFixed(0)}%)`)
+        : analysis.hasTriet
+        ? (isVi ? `Triệt (trọng số ${(analysis.tuanTrietWeight * 100).toFixed(0)}%)` : `Triệt severance (weight ${(analysis.tuanTrietWeight * 100).toFixed(0)}%)`)
+        : '';
+      detailHtml = `
+        ${liuLines ? `<div class="dh-liu-si-hua">${isVi ? 'Lưu Tứ Hóa: ' : 'Period Hóa: '}${liuLines}</div>` : ''}
+        ${voidNote ? `<div class="dh-void-note">${voidNote}</div>` : ''}
+        ${analysis.mainStars.length > 0 ? `<div class="dh-stars">${isVi ? 'Chính tinh: ' : 'Main stars: '}${analysis.mainStars.join(', ')}</div>` : ''}
+      `;
+    }
+    return `<div class="dai-han-detail${isActive ? ' expanded' : ''}" data-detail-idx="${i}">
+      ${detailHtml}
+    </div>`;
+  }).join('');
+
+  const title = isVi ? 'Đại Hạn (Chu Kỳ 10 Năm)' : 'Đại Hạn (10-Year Cycles)';
+  return `<div class="dai-han-section">
+    <h4 class="dai-han-title">${title}</h4>
+    <div class="dai-han-timeline">${periods}</div>
+    <div class="dai-han-details">${details}</div>
+  </div>`;
+}
+
+/* ── T3.7: toggle Đại Hạn detail panel ── */
+function toggleDaiHanDetail(el) {
+  const idx = el.getAttribute('data-period-idx');
+  const detailEl = document.querySelector(`.dai-han-detail[data-detail-idx="${idx}"]`);
+  if (!detailEl) return;
+  const wasExpanded = detailEl.classList.contains('expanded');
+  // Collapse all
+  document.querySelectorAll('.dai-han-detail').forEach(d => d.classList.remove('expanded'));
+  if (!wasExpanded) detailEl.classList.add('expanded');
+}
+
+/* ── SVG center coordinates for each branchIdx in the 4×4 grid ── */
+// BRANCH_GRID maps branchIdx → [row, col]:
+//   branchIdx 0(Tý)=[3,2], 1(Sửu)=[3,1], 2(Dần)=[3,0], 3(Mão)=[2,0]
+//   4(Thìn)=[1,0], 5(Tỵ)=[0,0], 6(Ngọ)=[0,1], 7(Mùi)=[0,2]
+//   8(Thân)=[0,3], 9(Dậu)=[1,3], 10(Tuất)=[2,3], 11(Hợi)=[3,3]
+// SVG viewBox 400×400, each cell = 100×100, center = [col*100+50, row*100+50]
+const PALACE_SVG_CENTER = {
+   0: [250, 350],  // Tý   [3,2]
+   1: [150, 350],  // Sửu  [3,1]
+   2: [ 50, 350],  // Dần  [3,0]
+   3: [ 50, 250],  // Mão  [2,0]
+   4: [ 50, 150],  // Thìn [1,0]
+   5: [ 50,  50],  // Tỵ   [0,0]
+   6: [150,  50],  // Ngọ  [0,1]
+   7: [250,  50],  // Mùi  [0,2]
+   8: [350,  50],  // Thân [0,3]
+   9: [350, 150],  // Dậu  [1,3]
+  10: [350, 250],  // Tuất [2,3]
+  11: [350, 350]   // Hợi  [3,3]
+};
+
+/* ── Render Phi Cung SVG overlay HTML string ── */
+function renderPhiCungOverlay(phiCungGraph, palaceData) {
+  if (!phiCungGraph) return '';
+  const W = 400, H = 400;
+  let paths = '';
+  const hoaClass = { ky:'phi-ky', loc:'phi-loc', quyen:'phi-quyen', khoa:'phi-khoa' };
+
+  for (const edge of phiCungGraph.edges) {
+    const fromBranch = palaceData[edge.from].branchIdx;
+    const toBranch   = palaceData[edge.to].branchIdx;
+    const fc = PALACE_SVG_CENTER[fromBranch];
+    const tc = PALACE_SVG_CENTER[toBranch];
+    if (!fc || !tc) continue;
+    const offsets = { ky:-30, loc:30, quyen:-15, khoa:15 };
+    const off = offsets[edge.hoa] || 0;
+    const sx = fc[0], sy = fc[1];
+    const ex = tc[0], ey = tc[1];
+    const cx = (fc[0] + tc[0]) / 2 + off;
+    const cy = (fc[1] + tc[1]) / 2 + off;
+    paths += `<path class="phi-arrow ${hoaClass[edge.hoa]}" `
+      + `d="M${sx},${sy} Q${cx},${cy} ${ex},${ey}" `
+      + `data-from="${edge.from}" data-to="${edge.to}" data-hoa="${edge.hoa}" `
+      + `data-star="${edge.star}" marker-end="url(#arrow-${edge.hoa})"/>`;
+  }
+
+  return `<svg class="phi-cung-overlay" viewBox="0 0 ${W} ${H}">
+    <defs>
+      <marker id="arrow-ky"    viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--danger,#e74c3c)"/></marker>
+      <marker id="arrow-loc"   viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--success,#2ecc71)"/></marker>
+      <marker id="arrow-quyen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--info,#3498db)"/></marker>
+      <marker id="arrow-khoa"  viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="var(--gold,#c8a96e)"/></marker>
+    </defs>
+    ${paths}
+  </svg>`;
+}
+
+/* ── Phi Cung interaction: toggle, hover highlight, filter ── */
+function initPhiCungInteraction() {
+  const overlay = document.querySelector('.phi-cung-overlay');
+  const toggle  = document.getElementById('phiCungToggle');
+  if (!overlay || !toggle) return;
+
+  toggle.addEventListener('click', () => {
+    overlay.classList.toggle('active');
+    toggle.classList.toggle('active');
+  });
+
+  document.querySelectorAll('.palace').forEach(cell => {
+    const palaceIdx = parseInt(cell.dataset.palaceIdx);
+    if (isNaN(palaceIdx)) return;
+    cell.addEventListener('mouseenter', () => {
+      overlay.querySelectorAll('.phi-arrow').forEach(a => {
+        a.classList.toggle('highlighted',
+          parseInt(a.dataset.from) === palaceIdx || parseInt(a.dataset.to) === palaceIdx);
+      });
+    });
+    cell.addEventListener('mouseleave', () => {
+      overlay.querySelectorAll('.phi-arrow').forEach(a => a.classList.remove('highlighted'));
+    });
+  });
+
+  document.querySelectorAll('.phi-filter').forEach(cb => {
+    cb.addEventListener('change', () => {
+      overlay.querySelectorAll(`.phi-${cb.dataset.hoa}`).forEach(a => {
+        a.style.display = cb.checked ? '' : 'none';
+      });
+    });
+  });
+}
+
 /* Get star brightness using lookup table from tuvi-data.js, fallback to hash */
 function getStarBrightness(starName, branchIdx) {
   if (typeof STAR_BRIGHTNESS_TABLE !== 'undefined' && STAR_BRIGHTNESS_TABLE[starName]) {
@@ -675,12 +1201,15 @@ function generateChart(name, dateStr, hour, gender) {
   /* Mệnh chủ */
   const menhChu = palaceData[0].mainStars[0] || 'Thiên Tướng';
 
+  const phiCungGraph = buildPhiCungGraph(palaceData);
+
   return {
     palaceData, cucHanh, banMenhHanh, thienCan, diaChi, menhPos, thanPos,
     tuanPos1, tuanPos2, trietPos1, trietPos2,
     year: gYear, month: gMonth, day: gDay,
     lunarYear, lunarMonth, lunarDay, canIdx, chiIdx,
-    napAm, cuc, cucValue, amDuong, menhChu, direction
+    napAm, cuc, cucValue, amDuong, menhChu, direction,
+    phiCungGraph
   };
 }
 
@@ -752,6 +1281,7 @@ function renderChart(chartData, name, dateStr, hour, gender) {
     <div class="cc-detail-dim" data-vi="${age} tuổi" data-en="Age: ${age}">${isVi ? `${age} tuổi` : `Age: ${age}`}</div>
   `};
 
+  let centerMergedAdded = false;
   for (let r = 0; r < 4; r++) {
     for (let c = 0; c < 4; c++) {
       const cell = cells[r][c];
@@ -759,11 +1289,50 @@ function renderChart(chartData, name, dateStr, hour, gender) {
       const div = document.createElement('div');
 
       if (cell.type === 'center') {
-        div.className = 'center-cell';
-        div.innerHTML = cell.content;
+        if (centerMergedAdded) continue; // skip [1][2], [2][1], [2][2]
+        centerMergedAdded = true;
+        div.className = 'center-merged';
+        div.style.gridColumn = '2 / 4';
+        div.style.gridRow = '2 / 4';
+        div.innerHTML = `
+          <div class="cm-label" data-vi="LÁ SỐ TỬ VI" data-en="NATAL CHART">${isVi ? 'LÁ SỐ TỬ VI' : 'NATAL CHART'}</div>
+          <div class="cm-name">${name}</div>
+          <div class="cm-year">
+            ${isVi ? 'Năm' : 'Year'} ${year} &nbsp;·&nbsp;
+            <span data-vi="${thienCan.vi} ${diaChi.vi}" data-en="${thienCan.en} ${diaChi.en}">${isVi ? `${thienCan.vi} ${diaChi.vi}` : `${thienCan.en} ${diaChi.en}`}</span>
+            &nbsp;·&nbsp; ${isVi ? 'Tháng' : 'Month'} ${chartData.month} ${isVi ? 'Ngày' : 'Day'} ${chartData.day}
+            &nbsp;·&nbsp; <span data-vi="Giờ ${hourVi}" data-en="Hour ${hourEn}">${isVi ? `Giờ ${hourVi}` : `Hour ${hourEn}`}</span>
+          </div>
+          <div class="cm-divider"></div>
+          <div class="cm-info-row">
+            <div class="cm-col">
+              <div class="cm-col-label" data-vi="Thông Tin" data-en="Profile">${isVi ? 'Thông Tin' : 'Profile'}</div>
+              <div class="cm-col-val" data-vi="${amDuong.vi}" data-en="${amDuong.en}">${isVi ? amDuong.vi : amDuong.en}</div>
+              <div class="cm-badge" data-vi="Mệnh ${banMenhHanh} · ${EL_NAMES[banMenhHanh]}" data-en="${EL_NAMES[banMenhHanh]} Destiny">${isVi ? `Mệnh ${banMenhHanh} · ${EL_NAMES[banMenhHanh]}` : `${EL_NAMES[banMenhHanh]} Destiny`}</div>
+              <div class="cm-dim" data-vi="${napAm.vi}" data-en="${napAm.en}">${isVi ? napAm.vi : napAm.en}</div>
+              <div class="cm-dim" data-vi="${cuc.vi}" data-en="${cuc.en}">${isVi ? cuc.vi : cuc.en}</div>
+            </div>
+            <div class="cm-col-sep"></div>
+            <div class="cm-col">
+              <div class="cm-col-label" data-vi="Mệnh Chủ" data-en="Ruling Star">${isVi ? 'Mệnh Chủ' : 'Ruling Star'}</div>
+              <div class="cm-col-gold">${menhChu}</div>
+              <div class="cm-dim" data-vi="Năm xem: ${currentYear}" data-en="Current Year: ${currentYear}">${isVi ? `Năm xem: ${currentYear}` : `Current Year: ${currentYear}`}</div>
+              <div class="cm-dim" data-vi="${age} tuổi" data-en="Age: ${age}">${isVi ? `${age} tuổi` : `Age: ${age}`}</div>
+            </div>
+          </div>
+          <div class="cm-divider"></div>
+          <div class="cm-tl-row">
+            <span class="khong-vong kv-tuan">${isVi ? 'Tuần' : 'Void'}</span>
+            <span class="cm-tl-val" data-vi="${BRANCHES[tuanPos1].vi}–${BRANCHES[tuanPos2].vi}" data-en="${BRANCHES[tuanPos1].en}–${BRANCHES[tuanPos2].en}">${isVi ? `${BRANCHES[tuanPos1].vi}–${BRANCHES[tuanPos2].vi}` : `${BRANCHES[tuanPos1].en}–${BRANCHES[tuanPos2].en}`}</span>
+            <span class="cm-sep-dot">·</span>
+            <span class="khong-vong kv-triet">${isVi ? 'Triệt' : 'Sever'}</span>
+            <span class="cm-tl-val" data-vi="${BRANCHES[trietPos1].vi}–${BRANCHES[trietPos2].vi}" data-en="${BRANCHES[trietPos1].en}–${BRANCHES[trietPos2].en}">${isVi ? `${BRANCHES[trietPos1].vi}–${BRANCHES[trietPos2].vi}` : `${BRANCHES[trietPos1].en}–${BRANCHES[trietPos2].en}`}</span>
+          </div>
+        `;
       } else {
         const p = cell.data;
         div.className = 'palace';
+        div.dataset.palaceIdx = palaceData.indexOf(p);
 
         const hoaMap = {};
         p.hoa.forEach(h => { hoaMap[h.star] = h.type; });
@@ -815,6 +1384,15 @@ function renderChart(chartData, name, dateStr, hour, gender) {
       grid.appendChild(div);
     }
   }
+
+  /* ── Inject Phi Cung SVG overlay ── */
+  const svgContainer = document.getElementById('phiCungSvgContainer');
+  if (svgContainer) {
+    svgContainer.innerHTML = renderPhiCungOverlay(chartData.phiCungGraph, palaceData);
+  }
+  const filtersEl = document.getElementById('phiCungFilters');
+  if (filtersEl) filtersEl.classList.remove('hidden');
+  initPhiCungInteraction();
 }
 
 /* ── Generate Interpretations (all 12 palaces) ── */
@@ -995,6 +1573,40 @@ function generateInterpretations(chartData) {
   });
 }
 
+/* ── Phi Cung Interpretation for Tổng Luận ── */
+function renderPhiCungInterpretation(phiCungGraph, isVi) {
+  if (!phiCungGraph || typeof PHI_CUNG_INTERPRETATIONS === 'undefined') return '';
+  if (typeof PALACE_NAMES === 'undefined') return '';
+
+  // Palace data-index → short key for template lookup
+  const PALACE_KEY = { 0: 'menh', 3: 'dien', 4: 'quan', 8: 'tai' };
+  const HOA_LABEL  = { loc: 'Lộc', quyen: 'Quyền', khoa: 'Khoa', ky: 'Kỵ' };
+
+  const matches = [];
+  for (const edge of phiCungGraph.edges) {
+    const fromKey = PALACE_KEY[edge.from];
+    const toKey   = PALACE_KEY[edge.to];
+    if (!fromKey || !toKey || fromKey === toKey) continue;
+    const tplKey = `${edge.hoa}_${fromKey}_${toKey}`;
+    if (PHI_CUNG_INTERPRETATIONS[tplKey]) {
+      matches.push({ tplKey, edge });
+    }
+  }
+  if (matches.length === 0) return '';
+
+  let html = `<p class="tl-section"><strong>${isVi ? 'Phi Cung Hóa Tượng' : 'Phi Cung Transformations'}:</strong></p><ul>`;
+  for (const { tplKey, edge } of matches) {
+    const tpl      = PHI_CUNG_INTERPRETATIONS[tplKey];
+    const text     = isVi ? tpl.vi : tpl.en;
+    const fromName = PALACE_NAMES[edge.from] || edge.from;
+    const toName   = PALACE_NAMES[edge.to]   || edge.to;
+    const hoaLabel = HOA_LABEL[edge.hoa] || edge.hoa;
+    html += `<li><strong>${edge.star} ${hoaLabel}</strong> (${fromName} → ${toName}): ${text}</li>`;
+  }
+  html += '</ul>';
+  return html;
+}
+
 /* ── Tổng Luận (Overall Synthesis) ── */
 function generateTongLuan(chartData) {
   const { palaceData, cucHanh, banMenhHanh, thienCan, diaChi, cuc, menhChu, canIdx, direction } = chartData;
@@ -1079,6 +1691,20 @@ function generateTongLuan(chartData) {
       html += ` — ${isVi ? dhm.vi : dhm.en}`;
     }
     html += '</p>';
+  }
+
+  // Cách Cục panel (T3.6)
+  const cachCucMatches = detectCachCuc(palaceData, chartData.phiCungGraph);
+  if (cachCucMatches.length > 0) {
+    html += renderCachCucPanel(cachCucMatches, isVi);
+  }
+
+  // Đại Hạn timeline (T3.7)
+  html += renderDaiHanTimeline(chartData, isVi);
+
+  // Phi Cung Hóa Tượng interpretation
+  if (chartData.phiCungGraph) {
+    html += renderPhiCungInterpretation(chartData.phiCungGraph, isVi);
   }
 
   // Final advice
@@ -1301,6 +1927,231 @@ document.getElementById('birthForm').addEventListener('submit', function(e) {
 
   document.getElementById('chart-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
+
+/* ══════════════════════════════════════════
+   LỤC HÀO SIDEBAR — T4.9 / T4.10 / T4.11 / T4.12
+   ══════════════════════════════════════════ */
+
+function renderHaoLine(value, pos) {
+  const isDong = value === 6 || value === 9;
+  const isYang = value === 7 || value === 9;
+  const line   = isYang ? '━━━━━━━' : '━━ ━━';
+  const marker = isDong ? (value === 9 ? ' ○' : ' ×') : '';
+  return `<div class="hao-line${isDong ? ' hao-dong' : ''}">${line}${marker} <span class="hao-pos">${pos}</span></div>`;
+}
+
+function renderLuanGiai(queData, haoDetails) {
+  if (typeof QUE_DATA === 'undefined') return '';
+  const isVi = currentLang === 'vi';
+  const qc = queData.queChinh;
+  if (!qc) return '';
+
+  // Thoán từ
+  const thoanTuRaw = qc.thoanTu || '';
+  const thoanTu = isVi ? (thoanTuRaw.vi || thoanTuRaw) : (thoanTuRaw.en || thoanTuRaw.vi || thoanTuRaw);
+
+  // Động hào từ — dongHao is array of 1-based positions e.g. [1,3,5]
+  let haoTuHtml = '';
+  if (queData.dongHao && qc.haoTu) {
+    queData.dongHao.forEach((haoPos) => {
+      const i = haoPos - 1;
+      const ht = qc.haoTu[i];
+      if (!ht) return;
+      const txt = isVi ? (ht.vi || ht) : (ht.en || ht.vi || ht);
+      haoTuHtml += `<div class="hao-tu-item"><span class="hao-tu-pos">${isVi ? 'Hào' : 'Line'} ${haoPos}:</span> ${txt}</div>`;
+    });
+  }
+
+  // Ngũ Hành summary
+  const NGU_HANH_NAMES = {
+    'Kim': { vi: 'Kim', en: 'Metal' },
+    'Mộc': { vi: 'Mộc', en: 'Wood' },
+    'Thủy': { vi: 'Thủy', en: 'Water' },
+    'Hỏa': { vi: 'Hỏa', en: 'Fire' },
+    'Thổ': { vi: 'Thổ', en: 'Earth' }
+  };
+  const counts = {};
+  haoDetails.forEach(h => {
+    const el = h.nguHanh || '';
+    counts[el] = (counts[el] || 0) + 1;
+  });
+  let strongest = '', weakest = '', maxC = 0, minC = 99;
+  Object.entries(counts).forEach(([el, c]) => {
+    if (c > maxC) { maxC = c; strongest = el; }
+    if (c < minC) { minC = c; weakest = el; }
+  });
+  const ngLabel  = isVi ? 'Ngũ Hành' : 'Elements';
+  const strLabel = isVi ? 'Vượng' : 'Strongest';
+  const wkLabel  = isVi ? 'Suy' : 'Weakest';
+  const strName  = NGU_HANH_NAMES[strongest] ? (isVi ? NGU_HANH_NAMES[strongest].vi : NGU_HANH_NAMES[strongest].en) : strongest;
+  const wkName   = NGU_HANH_NAMES[weakest]   ? (isVi ? NGU_HANH_NAMES[weakest].vi   : NGU_HANH_NAMES[weakest].en)   : weakest;
+  const nguHanhSummary = strongest ? `${ngLabel}: ${strLabel} ${strName}${weakest !== strongest ? ` · ${wkLabel} ${wkName}` : ''}` : '';
+
+  const titleTxt = isVi ? 'Luận Giải' : 'Interpretation';
+  const thoanLabel = isVi ? 'Thoán từ:' : 'Judgment:';
+  const dongLabel  = isVi ? 'Hào động:' : 'Moving lines:';
+
+  return `<div class="luan-giai">
+  <div class="luan-giai-title">${titleTxt}</div>
+  ${thoanTu ? `<div class="thoan-tu"><strong>${thoanLabel}</strong> ${thoanTu}</div>` : ''}
+  ${haoTuHtml ? `<div class="luan-giai-title">${dongLabel}</div>${haoTuHtml}` : ''}
+  ${nguHanhSummary ? `<div class="ngu-hanh-summary">${nguHanhSummary}</div>` : ''}
+</div>`;
+}
+
+function renderQueResult(queData, haoDetails) {
+  if (typeof QUE_DATA === 'undefined') return;
+  const resultEl = document.getElementById('lucHaoResult');
+  if (!resultEl) return;
+  const isVi = currentLang === 'vi';
+
+  // Phase 5: Get casting date and enhanced data
+  const ngayGieo = new Date();
+  const nhatThan = typeof getNhatThan === 'function' ? getNhatThan(ngayGieo) : null;
+  const lucThuArr = typeof getLucThu === 'function' ? getLucThu(ngayGieo) : null;
+
+  // Get selected lĩnh vực
+  const linhVucEl = document.querySelector('input[name="linhVuc"]:checked');
+  const linhVuc = linhVucEl ? linhVucEl.value : 'tai';
+
+  // Phase 5: Get Dụng Thần
+  const dungThan = typeof getDungThan === 'function' ? getDungThan(haoDetails, linhVuc) : null;
+
+  const qc = queData.queChinh;
+  const qb = (queData.queBien && queData.queBien !== queData.queChinh) ? queData.queBien : null;
+  if (!qc) return;
+
+  const qcName = qc.name;
+  const qbName = qb ? qb.name : null;
+
+  // Phase 5: Nhật Thần info bar
+  let phase5Html = '';
+  if (nhatThan) {
+    phase5Html += `<div class="nhat-than-bar">
+      <span class="nhat-than-label">${isVi ? 'Nhật Thần' : 'Day Spirit'}:</span>
+      <span class="nhat-than-value">${nhatThan.chiName}</span>
+      <span class="nhat-than-clash">${isVi ? 'Xung' : 'Clash'}: ${nhatThan.clashes}</span>
+      ${nhatThan.supports ? `<span class="nhat-than-support">${isVi ? 'Hợp' : 'Support'}: ${nhatThan.supports}</span>` : ''}
+    </div>`;
+  }
+
+  // Phase 5: Dụng Thần highlight info
+  if (dungThan) {
+    const lucThanName = dungThan.lucThan || '';
+    phase5Html += `<div class="dung-than-bar">
+      <span>${isVi ? 'Dụng Thần' : 'Acting Spirit'}:</span>
+      <strong>${lucThanName}</strong> (${isVi ? 'hào' : 'line'} ${dungThan.pos})
+    </div>`;
+  }
+
+  // Quẻ display block
+  let queDisplayHtml = `<div class="que-display">
+    <div class="que-block">
+      <div class="que-name">${qcName}</div>
+      <div class="que-han">${qc.han || ''}</div>
+    </div>`;
+  if (qb) {
+    const arrow = isVi ? '→ Biến' : '→ Transforms';
+    queDisplayHtml += `<div class="que-block">
+      <div class="que-name">${arrow}</div>
+      <div class="que-name">${qbName}</div>
+      <div class="que-han">${qb.han || ''}</div>
+    </div>`;
+  }
+  queDisplayHtml += `</div>`;
+
+  // Hào lines: display top-to-bottom = hào 6 → hào 1
+  let haoLinesHtml = '<div class="hao-reveal">';
+  for (let i = 5; i >= 0; i--) {
+    haoLinesHtml += renderHaoLine(queData.haoArray[i], i + 1);
+  }
+  haoLinesHtml += '</div>';
+
+  // Lục Thân table with Lục Thú column
+  const thHao  = isVi ? 'Hào' : 'Line';
+  const thDiaChi = isVi ? 'Địa Chi' : 'Branch';
+  const thNguHanh = isVi ? 'Ngũ Hành' : 'Element';
+  const thLucThan = isVi ? 'Lục Thân' : 'Relation';
+  const thLucThu = isVi ? 'Lục Thú' : 'Beast';
+  const thDong = isVi ? 'Động' : 'Moving';
+
+  let tableHtml = `<table class="luc-than-table">
+  <thead><tr>
+    <th>${thHao}</th><th>${thDiaChi}</th><th>${thNguHanh}</th><th>${thLucThan}</th><th>${thLucThu}</th><th>${thDong}</th>
+  </tr></thead><tbody>`;
+
+  // Table rows: hào 6 → hào 1 to match visual order
+  for (let i = 5; i >= 0; i--) {
+    const h = haoDetails[i] || {};
+    const isDong = queData.dongHao && queData.dongHao.includes(i + 1);
+    const lucThanTxt = h.lucThan || '';
+    const isDungThan = dungThan && dungThan.pos === (i + 1);
+    const rowClass = isDungThan ? 'hao-dung-than' : '';
+
+    // Lục Thú for this line
+    const lucThuObj = lucThuArr ? lucThuArr[i] : null;
+    const lucThuTxt = lucThuObj ? (isVi ? lucThuObj.vi : lucThuObj.en) : '';
+    const lucThuClass = lucThuObj ? (lucThuObj.nature === 'cát' ? 'luc-thu-cat' : (lucThuObj.nature === 'hung' ? 'luc-thu-hung' : '')) : '';
+
+    tableHtml += `<tr class="${rowClass}">
+      <td>${i + 1}</td>
+      <td>${h.diaChi || ''}</td>
+      <td>${h.nguHanh || ''}</td>
+      <td>${lucThanTxt}</td>
+      <td class="luc-thu-cell ${lucThuClass}">${lucThuTxt}</td>
+      <td>${isDong ? '<span class="dong-mark">●</span>' : ''}</td>
+    </tr>`;
+  }
+  tableHtml += '</tbody></table>';
+
+  const luanGiaiHtml = renderLuanGiai(queData, haoDetails);
+
+  resultEl.innerHTML = phase5Html + queDisplayHtml + haoLinesHtml + tableHtml + luanGiaiHtml;
+}
+
+function initLucHaoSidebar() {
+  const panel  = document.getElementById('lucHaoPanel');
+  const toggle = document.getElementById('lucHaoToggle');
+  const castBtn = document.getElementById('gieoQueBtn');
+  if (!panel || !toggle) return;
+
+  function updateToggleLabel() {
+    const isVi = currentLang === 'vi';
+    toggle.textContent = isVi ? '☰ Gieo Quẻ' : '☰ I Ching';
+  }
+  updateToggleLabel();
+
+  toggle.addEventListener('click', () => {
+    const hidden = panel.classList.toggle('luc-hao-panel-hidden');
+    toggle.classList.toggle('active', !hidden);
+    updateToggleLabel();
+  });
+
+  if (castBtn) {
+    castBtn.addEventListener('click', () => {
+      if (typeof gieoQue === 'undefined') return;
+      castBtn.disabled = true;
+      const isVi = currentLang === 'vi';
+      castBtn.textContent = isVi ? '⏳ Đang gieo...' : '⏳ Casting...';
+
+      // T4.11 — coin flip animation placeholder
+      const resultEl = document.getElementById('lucHaoResult');
+      if (resultEl) resultEl.innerHTML = '<div class="coin-flip-wrap"><span class="coin-flip">🪙</span></div>';
+
+      setTimeout(() => {
+        const raw        = gieoQue();
+        const queData    = xacDinhQue(raw);
+        const haoDetails = anLucThan(queData);
+        renderQueResult(queData, haoDetails);
+        castBtn.disabled = false;
+        castBtn.textContent = isVi ? '🎲 Gieo Quẻ' : '🎲 Cast Hexagram';
+      }, 400);
+    });
+  }
+}
+
+// Call after DOM is ready (scripts load after </body> so DOM is available)
+initLucHaoSidebar();
 
 (function() {
   const missing = [];

@@ -1,5 +1,7 @@
 :root {
   --gold: #c49a3c;
+  --border: rgba(140,120,60,0.3);
+  --border-dim: rgba(140,120,60,0.15);
   --gold-light: #dbb85e;
   --gold-dim: rgba(196,154,60,0.3);
   --bg: #d6cdb8;
@@ -18,7 +20,7 @@
   --hoa: #c42b2b;
   --tho: #9e6b1a;
 }
-*{margin:0;padding:0;box-sizing:border-box;}
+*{margin:0;padding:0;box-sizing:border-box;font-size: 20px;}
 body{background:var(--bg);color:var(--text);font-family:'EB Garamond',serif;min-height:100vh;overflow-x:hidden;font-size:15px;background-image:linear-gradient(180deg,#d6cdb8 0%,#cbc1aa 50%,#c0b69e 100%);cursor:none;}
 
 /* Custom Cursor */
@@ -80,7 +82,7 @@ h1{font-family:'EB Garamond',serif;font-size:clamp(2rem,5.5vw,3.8rem);color:#5c4
 .cast-btn:hover{background:#5a440d;box-shadow:0 2px 12px rgba(107,82,16,.35);}
 
 /* ── Chart ── */
-#chart-area{display:none;width:100%;max-width:1050px;margin-bottom:2.5rem;animation:fadeUp .8s ease;}
+#chart-area{display:none;width:100%;max-width:1260px;margin-bottom:2.5rem;animation:fadeUp .8s ease;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
 .chart-header{text-align:center;margin-bottom:1.5rem;}
 .chart-header h2{font-family:'EB Garamond',serif;font-size:clamp(1.2rem,3vw,1.6rem);color:var(--gold);letter-spacing:.06em;}
@@ -88,7 +90,7 @@ h1{font-family:'EB Garamond',serif;font-size:clamp(2rem,5.5vw,3.8rem);color:#5c4
 
 .chart-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,auto);gap:0;border:2px solid rgba(107,82,16,.3);border-radius:4px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,.1);}
 
-.palace{background:rgba(225,218,200,.55);padding:.55rem .5rem;min-height:155px;display:flex;flex-direction:column;position:relative;transition:background .3s;border:1px solid rgba(140,120,60,.2);}
+.palace{background:rgba(225,218,200,.55);padding:.65rem .6rem;min-height:220px;display:flex;flex-direction:column;position:relative;transition:background .3s;border:1px solid rgba(140,120,60,.2);}
 .palace:hover{background:rgba(235,228,212,.75);}
 
 /* Palace header: Đại Hạn left, Palace name right */
@@ -101,10 +103,10 @@ h1{font-family:'EB Garamond',serif;font-size:clamp(2rem,5.5vw,3.8rem);color:#5c4
 
 /* Star list */
 .star-list{display:flex;flex-direction:column;gap:.15rem;margin-top:.1rem;flex:1;}
-.star-entry{font-size:.82rem;line-height:1.35;display:flex;align-items:baseline;gap:.25rem;flex-wrap:wrap;}
-.star-main{font-weight:700;font-size:.85rem;}
-.star-brightness{font-size:.7rem;font-weight:400;opacity:.7;}
-.star-aux{color:var(--text-dim);font-size:.78rem;font-weight:400;}
+.star-entry{font-size:.88rem;line-height:1.4;display:flex;align-items:baseline;gap:.25rem;flex-wrap:wrap;}
+.star-main{font-weight:700;font-size:.93rem;}
+.star-brightness{font-size:.72rem;font-weight:400;opacity:.7;}
+.star-aux{color:var(--text-dim);font-size:.83rem;font-weight:400;}
 .hoa-badge{font-size:.68rem;padding:.1rem .3rem;border-radius:2px;font-weight:700;line-height:1;display:inline-block;margin-left:.15rem;}
 .hoa-loc{color:var(--hoa-loc);}
 .hoa-quyen{color:var(--hoa-quyen);}
@@ -133,8 +135,25 @@ h1{font-family:'EB Garamond',serif;font-size:clamp(2rem,5.5vw,3.8rem);color:#5c4
 .el-hoa{color:var(--hoa);background:rgba(220,38,38,.1);}
 .el-tho{color:var(--tho);background:rgba(180,83,9,.1);}
 
-/* Center info cells */
-.center-cell{background:rgba(225,218,200,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.8rem .5rem;min-height:155px;border:1px solid rgba(140,120,60,.2);}
+/* Center unified card (spans 2×2 grid positions) */
+.center-merged{background:rgba(225,218,200,.7);border:1px solid rgba(140,120,60,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1.2rem 1rem;}
+.cm-label{font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#7a5a10;margin-bottom:.2rem;}
+.cm-name{font-family:'EB Garamond',serif;font-size:1.3rem;font-weight:600;color:#5c4410;margin-bottom:.15rem;}
+.cm-year{font-size:.78rem;color:var(--text-dim);line-height:1.5;margin-bottom:.1rem;}
+.cm-divider{width:55%;height:1px;background:rgba(140,120,60,.25);margin:.5rem auto;}
+.cm-info-row{display:flex;align-items:flex-start;justify-content:center;gap:1.8rem;width:100%;}
+.cm-col{display:flex;flex-direction:column;align-items:center;gap:.1rem;}
+.cm-col-sep{width:1px;background:rgba(140,120,60,.2);align-self:stretch;}
+.cm-col-label{font-size:.63rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#7a5a10;margin-bottom:.12rem;}
+.cm-col-val{font-size:.88rem;color:var(--text);font-weight:500;}
+.cm-badge{font-size:.76rem;font-weight:700;letter-spacing:.08em;padding:.2rem .65rem;border-radius:3px;border:1px solid rgba(107,82,16,.25);color:#6b5210;background:rgba(107,82,16,.06);margin:.22rem 0;}
+.cm-dim{font-size:.78rem;color:var(--text-dim);line-height:1.5;}
+.cm-col-gold{font-size:1.05rem;font-weight:700;color:var(--gold);margin:.12rem 0;}
+.cm-tl-row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--text-dim);flex-wrap:wrap;justify-content:center;}
+.cm-tl-val{font-size:.78rem;color:var(--text);}
+.cm-sep-dot{color:rgba(140,120,60,.4);font-size:.7rem;}
+/* Legacy center-cell kept for compatibility */
+.center-cell{background:rgba(225,218,200,.7);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.8rem .5rem;min-height:185px;border:1px solid rgba(140,120,60,.2);}
 .center-cell .cc-label{font-size:.72rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:#7a5a10;margin-bottom:.35rem;}
 .center-cell .cc-name{font-family:'EB Garamond',serif;font-size:1.05rem;color:#5c4410;margin-bottom:.2rem;}
 .center-cell .cc-detail{font-size:.88rem;color:var(--text);line-height:1.6;}
@@ -215,10 +234,12 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
   .wrap { padding: 5.5rem 1rem 2.5rem; }
   #chart-area { max-width: 100%; }
   .chart-grid { font-size: .85em; }
-  .palace { min-height: 130px; padding: .45rem .4rem; }
-  .center-cell { min-height: 130px; }
-  .star-entry { font-size: .78rem; }
-  .star-main { font-size: .8rem; }
+  .palace { min-height: 175px; padding: .5rem .45rem; }
+  .center-cell { min-height: 175px; }
+  .center-merged { padding: .9rem .7rem; }
+  .cm-name { font-size: 1.1rem; }
+  .star-entry { font-size: .8rem; }
+  .star-main { font-size: .84rem; }
   #interp-area { max-width: 100%; }
   .accordion-content { font-size: .95rem; }
   .know-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
@@ -244,6 +265,9 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
   .chart-grid { min-width: 600px; font-size: .75em; }
   .palace { min-height: 105px; padding: .3rem .25rem; }
   .center-cell { min-height: 105px; padding: .4rem .3rem; }
+  .center-merged { padding: .6rem .5rem; }
+  .cm-name { font-size: .95rem; }
+  .cm-info-row { gap: 1rem; }
   .palace-name { font-size: .72rem; }
   .palace-dai-han { font-size: .68rem; }
   .star-entry { font-size: .72rem; }
@@ -314,6 +338,9 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
   .chart-grid { min-width: 520px; font-size: .68em; }
   .palace { min-height: 90px; padding: .2rem .18rem; }
   .center-cell { min-height: 90px; padding: .3rem .2rem; }
+  .center-merged { padding: .5rem .4rem; }
+  .cm-name { font-size: .88rem; }
+  .cm-info-row { gap: .7rem; }
 
   /* Lunar fields */
 
@@ -355,3 +382,116 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
 #guidance-content{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;}
 #tongluan-area{display:none;width:100%;max-width:850px;margin-bottom:2.5rem;animation:fadeUp .8s ease .3s both;}
 #tongluan-content{background:rgba(225,218,200,.5);border:1px solid rgba(107,82,16,.18);border-radius:6px;padding:1.5rem 1.2rem;line-height:1.85;color:var(--text);font-size:.95rem;}
+
+/* ── Phi Cung SVG Overlay ── */
+.chart-grid-wrapper{position:relative;}
+.phi-cung-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;display:none;}
+.phi-cung-overlay.active{display:block;}
+.phi-arrow{fill:none;stroke-width:2;opacity:.15;transition:opacity .3s;}
+.phi-arrow.highlighted{opacity:1;stroke-width:3;}
+.phi-arrow.chain{opacity:1;stroke-width:4;stroke-dasharray:none;}
+.phi-ky{stroke:var(--danger,#e74c3c);}
+.phi-loc{stroke:var(--success,#2ecc71);}
+.phi-quyen{stroke:var(--info,#3498db);}
+.phi-khoa{stroke:var(--gold,#c8a96e);}
+.phi-cung-toggle{cursor:pointer;padding:.4rem .8rem;font-size:.82rem;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text);margin:.5rem .25rem;}
+.phi-cung-toggle.active{background:var(--gold);color:var(--bg);}
+.phi-cung-filters{display:flex;gap:.5rem;margin:.5rem 0;flex-wrap:wrap;}
+.phi-cung-filters label{font-size:.78rem;cursor:pointer;}
+
+/* ── T3.6: Cách Cục Panel ── */
+.cach-cuc-panel{margin-top:1rem;padding:1rem;border:1px solid var(--border);border-radius:8px;background:rgba(0,0,0,.15);}
+.cach-cuc-title{font-size:.95rem;font-weight:700;color:var(--gold);margin:0 0 .6rem 0;letter-spacing:.04em;}
+.cach-cuc-item{display:flex;justify-content:space-between;align-items:flex-start;padding:.45rem 0;border-bottom:1px solid rgba(107,82,16,.15);gap:.8rem;}
+.cach-cuc-item:last-child{border-bottom:none;}
+.cach-cuc-info{display:flex;flex-direction:column;gap:.2rem;flex:1;}
+.cach-cuc-name{font-weight:600;font-size:.88rem;color:var(--text);}
+.cach-cuc-desc{font-size:.78rem;color:var(--text-dim);line-height:1.5;}
+.cach-cuc-badge{font-size:.72rem;padding:.2rem .5rem;border-radius:4px;white-space:nowrap;align-self:flex-start;font-weight:700;}
+.cach-cuc-cat{background:rgba(46,204,113,.15);color:#2ecc71;}
+.cach-cuc-hung{background:rgba(231,76,60,.15);color:#e74c3c;}
+.cach-cuc-trung{background:rgba(200,169,110,.15);color:var(--gold,#c8a96e);}
+
+/* ── T3.7: Đại Hạn Timeline ── */
+.dai-han-section{margin-top:1.2rem;}
+.dai-han-title{font-size:.95rem;font-weight:700;color:var(--gold);margin:0 0 .6rem 0;letter-spacing:.04em;}
+.dai-han-timeline{display:flex;overflow-x:auto;gap:0;border:1px solid var(--border);border-radius:8px;scrollbar-width:thin;scrollbar-color:var(--gold) transparent;}
+.dai-han-timeline::-webkit-scrollbar{height:4px;}
+.dai-han-timeline::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px;}
+.dai-han-period{min-width:90px;padding:.5rem .4rem;text-align:center;border-right:1px solid var(--border);font-size:.74rem;cursor:pointer;transition:background .25s;display:flex;flex-direction:column;gap:.2rem;}
+.dai-han-period:last-child{border-right:none;}
+.dai-han-period:hover{background:rgba(200,169,110,.1);}
+.dai-han-active{background:rgba(200,169,110,.2);font-weight:700;border-bottom:3px solid var(--gold,#c8a96e);}
+.dai-han-range{font-size:.68rem;color:var(--text-dim);font-style:italic;}
+.dai-han-palace{font-weight:600;color:var(--text);font-size:.78rem;}
+.dai-han-stars{font-size:.65rem;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.dai-han-details{margin-top:.5rem;}
+.dai-han-detail{display:none;padding:.7rem .9rem;background:rgba(0,0,0,.12);border:1px solid var(--border);border-radius:6px;font-size:.82rem;line-height:1.7;}
+.dai-han-detail.expanded{display:block;}
+.dh-liu-si-hua{margin-bottom:.35rem;}
+.dh-hoa{display:inline-block;margin-right:.6rem;padding:.1rem .35rem;background:rgba(200,169,110,.12);border-radius:3px;font-size:.76rem;color:var(--gold);}
+.dh-void-note{color:#e74c3c;font-size:.78rem;margin-bottom:.3rem;}
+.dh-stars{color:var(--text-dim);font-size:.78rem;}
+.phi-cung-filters.hidden{display:none;}
+
+/* ── Chart + Sidebar Layout ── */
+/* ── Form buttons row ── */
+.form-btns-row{grid-column:1/-1;display:flex;gap:.7rem;margin-top:.5rem;align-items:stretch;}
+.form-btns-row .cast-btn{flex:1;margin-top:0;grid-column:unset;}
+.luc-hao-toggle-btn{flex:0 0 auto;padding:.85rem 1.1rem;cursor:pointer;background:transparent;border:1.5px solid var(--border);border-radius:4px;color:var(--text);font-family:'EB Garamond',serif;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;transition:border-color .25s,color .25s;}
+.luc-hao-toggle-btn:hover{border-color:var(--gold);color:var(--gold);}
+.luc-hao-toggle-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(107,82,16,.07);}
+
+/* ── Lục Hào Panel ── */
+.luc-hao-panel{width:100%;max-width:560px;margin-bottom:2rem;padding:1.2rem 1.4rem;background:rgba(235,228,212,.45);border:1px solid var(--border);border-radius:6px;}
+.luc-hao-panel-hidden{display:none;}
+.luc-hao-cast-btn{width:100%;padding:.6rem;margin-top:.8rem;cursor:pointer;background:var(--gold);color:var(--bg);border:none;border-radius:4px;font-family:'EB Garamond',serif;font-size:1rem;}
+.luc-hao-fields{display:flex;gap:.8rem;margin:.5rem 0;font-size:.85rem;}
+.luc-hao-result{margin-top:1rem;}
+.luc-hao-input label{font-size:.85rem;font-weight:500;color:var(--text-dim);display:block;margin-bottom:.3rem;}
+.luc-hao-input input[type=text]{width:100%;background:rgba(235,228,212,.75);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:'EB Garamond',serif;font-size:1rem;padding:.5rem .7rem;outline:none;}
+@media(max-width:480px){
+  .form-btns-row{flex-direction:column;}
+  .luc-hao-toggle-btn{width:100%;}
+}
+
+/* ── Quẻ Display ── */
+.que-display{display:flex;gap:1.5rem;margin:.5rem 0;}
+.que-block{text-align:center;min-width:80px;}
+.que-name{font-weight:700;font-size:1.05rem;}
+.que-han{font-size:1.4rem;margin:.2rem 0;}
+.hao-line{font-family:monospace;font-size:1rem;letter-spacing:.1em;padding:.1rem 0;}
+.hao-dong{color:var(--gold);font-weight:700;}
+.hao-pos{font-size:.75rem;color:var(--text-dim);margin-left:.4rem;}
+.luc-than-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.6rem;}
+.luc-than-table th{border-bottom:1px solid var(--border);padding:.3rem .4rem;text-align:left;color:var(--text-dim);}
+.luc-than-table td{padding:.25rem .4rem;border-bottom:1px solid var(--border-dim);}
+.dong-mark{color:var(--gold);}
+
+/* ── Coin Animation ── */
+.coin-flip-wrap{display:flex;justify-content:center;padding:16px 0;}
+.coin-flip{display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background:var(--gold);color:var(--bg);animation:coinSpin .6s ease-in-out;will-change:transform;}
+@keyframes coinSpin{0%{transform:rotateY(0deg)}50%{transform:rotateY(180deg)}100%{transform:rotateY(360deg)}}
+.hao-reveal{animation:haoFadeIn .4s ease-out;will-change:opacity,transform;}
+@keyframes haoFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Luận Giải ── */
+.luan-giai{margin-top:.8rem;padding:.6rem;border-top:1px solid var(--border);}
+.luan-giai-title{font-weight:700;margin-bottom:.4rem;font-size:.9rem;}
+.thoan-tu{font-style:italic;margin-bottom:.5rem;font-size:.88rem;}
+.hao-tu-item{margin:.3rem 0;font-size:.85rem;}
+.hao-tu-pos{color:var(--gold);font-weight:700;}
+.ngu-hanh-summary{margin-top:.5rem;font-size:.82rem;color:var(--text-dim);}
+
+/* ── Phase 5: Nhật Thần / Dụng Thần / Lục Thú ── */
+.nhat-than-bar{display:flex;gap:1rem;padding:.5rem;background:rgba(200,169,110,.1);border-radius:4px;font-size:.85rem;margin-bottom:.5rem;flex-wrap:wrap;}
+.nhat-than-label{color:var(--text-dim);}
+.nhat-than-value{font-weight:700;color:var(--gold);}
+.nhat-than-clash{color:var(--danger);}
+.nhat-than-support{color:var(--success);}
+.dung-than-bar{padding:.4rem .8rem;background:rgba(46,204,113,.1);border-left:3px solid var(--success);margin-bottom:.8rem;font-size:.9rem;}
+.dung-than-bar strong{color:var(--success);}
+.hao-dung-than{background:rgba(46,204,113,.15) !important;}
+.luc-thu-cell{font-size:.75rem;color:var(--text-dim);}
+.luc-thu-cat{color:var(--success);}
+.luc-thu-hung{color:var(--danger);}

@@ -112,8 +112,27 @@
           <label><input type="radio" name="gender" value="F"> Nữ (Female)</label>
         </div>
       </div>
-      <button type="submit" class="cast-btn" data-en="✦ &nbsp; Cast Your Chart &nbsp; ✦" data-vi="✦ &nbsp; Lập Lá Số &nbsp; ✦">✦ &nbsp; Lập Lá Số &nbsp; ✦</button>
+      <div class="form-btns-row">
+        <button type="submit" class="cast-btn" data-en="✦ &nbsp; Cast Your Chart &nbsp; ✦" data-vi="✦ &nbsp; Lập Lá Số &nbsp; ✦">✦ &nbsp; Lập Lá Số &nbsp; ✦</button>
+        <button type="button" id="lucHaoToggle" class="luc-hao-toggle-btn" aria-label="Toggle I Ching panel / Mở bảng Gieo Quẻ" data-vi="☰ Gieo Quẻ" data-en="☰ I Ching">☰ Gieo Quẻ</button>
+      </div>
     </form>
+  </div>
+
+  <!-- I Ching Panel -->
+  <div id="lucHaoPanel" class="luc-hao-panel luc-hao-panel-hidden">
+    <div class="luc-hao-input">
+      <label for="lucHaoQuestion" data-vi="Câu hỏi:" data-en="Question:">Câu hỏi:</label>
+      <input type="text" id="lucHaoQuestion" placeholder=" " />
+      <div class="luc-hao-fields">
+        <label><input type="radio" name="linhVuc" value="tai" checked> <span data-vi="Tài" data-en="Finance">Tài</span></label>
+        <label><input type="radio" name="linhVuc" value="quan"> <span data-vi="Quan" data-en="Career">Quan</span></label>
+        <label><input type="radio" name="linhVuc" value="hon"> <span data-vi="Hôn" data-en="Marriage">Hôn</span></label>
+        <label><input type="radio" name="linhVuc" value="suc"> <span data-vi="Sức" data-en="Health">Sức</span></label>
+      </div>
+      <button id="gieoQueBtn" type="button" class="luc-hao-cast-btn" aria-label="Cast hexagram / Gieo quẻ Kinh Dịch" data-vi="🎲 Gieo Quẻ" data-en="🎲 Cast Hexagram">🎲 Gieo Quẻ</button>
+    </div>
+    <div id="lucHaoResult" class="luc-hao-result"></div>
   </div>
 
   <!-- Chart Area -->
@@ -122,7 +141,17 @@
       <h2 id="chart-title">Lá Số Tử Vi</h2>
       <p id="chart-sub"></p>
     </div>
-    <div class="chart-grid" id="chartGrid"></div>
+    <div class="chart-grid-wrapper">
+      <div class="chart-grid" id="chartGrid"></div>
+      <div id="phiCungSvgContainer"></div>
+    </div>
+    <div class="phi-cung-filters hidden" id="phiCungFilters">
+      <button type="button" class="phi-cung-toggle" id="phiCungToggle" data-vi="Phi Cung" data-en="Phi Cung">Phi Cung</button>
+      <label><input type="checkbox" class="phi-filter" data-hoa="loc" checked> <span data-vi="Lộc" data-en="Lộc">Lộc</span></label>
+      <label><input type="checkbox" class="phi-filter" data-hoa="quyen" checked> <span data-vi="Quyền" data-en="Quyền">Quyền</span></label>
+      <label><input type="checkbox" class="phi-filter" data-hoa="khoa" checked> <span data-vi="Khoa" data-en="Khoa">Khoa</span></label>
+      <label><input type="checkbox" class="phi-filter" data-hoa="ky" checked> <span data-vi="Kỵ" data-en="Kỵ">Kỵ</span></label>
+    </div>
     <div class="chart-legend">
       <span class="legend-label" data-en="Brightness:" data-vi="Sáng độ:">Sáng độ:</span>
       <span>M: Miếu</span> <span>V: Vượng</span> <span>Đ: Đắc</span> <span>B: Bình</span> <span>H: Hãm</span>
@@ -134,6 +163,7 @@
       <div class="legend-item"><span class="legend-swatch s-tho"></span> Thổ</div>
     </div>
   </div>
+
 
   <!-- Daily Guidance -->
   <div id="guidance-area">
@@ -195,6 +225,7 @@
 
 <script src=".support/lunar-data.js"></script>
 <script src=".support/tuvi-data.js"></script>
+<script src=".support/kinh-dich-data.js"></script>
 <script src=".support/natal_chart.js"></script>
 </body>
 </html>
