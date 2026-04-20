@@ -1,9 +1,114 @@
+# ─── Project-specific (pre-existing) ─────────────────────────────────────────
 docs/
 instructions_documents/
 Test_Subject/
 trash_can/
-.gitignore
+scratch/
 CLAUDE.md
 MEMORY.md
+
+# ─── Agent / tooling configs (personal) ──────────────────────────────────────
 .claude/
+.mcp.json
+.gitignore
+
+# ─── Secrets & credentials ───────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.env.local
+*.pem
+*.key
+*.crt
+*.cer
+*.pfx
+*.p12
+*.keystore
+*.jks
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+*.ppk
+.ssh/
+secrets.json
+secrets.*.json
+credentials.json
+credentials.*.json
+*credentials*
+*secret*
+*.secrets
+*.token
+.npmrc
+.netrc
+auth.json
+.aws/
+.gcloud/
+.azure/
+config/local.*
+config/production.*
+firebase-adminsdk*.json
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+
+# ─── NPM / Node ──────────────────────────────────────────────────────────────
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+.yarn/
+.pnp.*
+
+# ─── Browser automation / Playwright ─────────────────────────────────────────
+.playwright-mcp/
+playwright-report/
+test-results/
+.cache/
+
+# ─── Build artifacts & temp ──────────────────────────────────────────────────
+dist/
+build/
+out/
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+log/
+
+# ─── Coverage / test output ──────────────────────────────────────────────────
+coverage/
+.nyc_output/
+*.lcov
+
+# ─── Local databases ─────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# ─── IDE / editor personal settings ──────────────────────────────────────────
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ─── OS / misc ───────────────────────────────────────────────────────────────
+*.orig
+.directory

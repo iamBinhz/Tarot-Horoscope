@@ -62,7 +62,7 @@ const SENTIMENT_KEYWORDS = {
 // 5 types. Checked in order; exploration is the default fallback.
 const QUESTION_TYPE_PATTERNS = {
   decision: {
-    vi: ['nên.*không','có nên','nên hay không','lựa chọn','quyết định','chọn','a hay b','có đúng không'],
+    vi: ['nên.*không','nên.*hay','có nên','nên hay không','lựa chọn','quyết định','chọn','a hay b','có đúng không'],
     en: ['should i','should we','a or b','choose','choice','decision','decide','better to','which one','either or']
   },
   timing: {
@@ -70,11 +70,11 @@ const QUESTION_TYPE_PATTERNS = {
     en: ['when will','how long','how soon','timing','by when','how many months','will it be soon','time frame']
   },
   advice: {
-    vi: ['làm sao','cần gì','nên làm','làm thế nào','cách nào','tôi phải làm','làm gì','hướng nào','cần phải'],
+    vi: ['làm sao','cần gì','nên làm','làm thế nào','như thế nào để','cách nào','tôi phải làm','làm gì','hướng nào','cần phải','cần thực hiện','cần làm'],
     en: ['how to','what should i do','what do i need','how can i','what must i','what steps','how do i','advice on']
   },
   outcome: {
-    vi: ['sẽ ra sao','kết quả','sẽ thế nào','kết cục','điều gì sẽ','liệu có','thành công không','thất bại không','tương lai'],
+    vi: ['sẽ ra sao','kết quả','sẽ thế nào','sẽ.*thế nào','kết cục','điều gì sẽ','liệu có','thành công không','thất bại không','tương lai'],
     en: ['will it','what will happen','outcome','result','how will it','what will','succeed','fail','end up','future of']
   }
   // exploration: default fallback — no patterns needed
