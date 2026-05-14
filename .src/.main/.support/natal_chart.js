@@ -1716,56 +1716,60 @@ function generateTongLuan(chartData) {
   area.style.display = 'block';
 }
 
+/* ── Day element helpers (Phase 2) ── */
+function getDayElement(dayCC) {
+  const napAm = NAP_AM_TABLE[dayCC.sexIdx];
+  return getNapAmHanh(napAm);
+}
+
+const DAY_QUALITY_BANNERS = {
+  bi_sinh: { dayScore: 9, cssClass: 'bi_sinh' },
+  hoa:     { dayScore: 7, cssClass: 'hoa'     },
+  khac:    { dayScore: 6, cssClass: 'khac'    },
+  sinh:    { dayScore: 5, cssClass: 'sinh'    },
+  bi_khac: { dayScore: 4, cssClass: 'bi_khac' }
+};
+
+function buildBannerSummary(relation, dayEl, userEl) {
+  const dEn = EL_NAMES[dayEl] || dayEl;
+  const uEn = EL_NAMES[userEl] || userEl;
+  return {
+    bi_sinh: { vi: 'Ngày ' + dayEl + ' sinh bản mệnh ' + userEl + ' — cực kỳ thuận lợi',     en: dEn + ' day nurtures your ' + uEn + ' destiny — highly auspicious'         },
+    hoa:     { vi: 'Ngày ' + dayEl + ' cùng hành bản mệnh — hài hòa và ổn định',              en: dEn + ' day shares your element — harmonious and stable'                    },
+    khac:    { vi: 'Bản mệnh ' + userEl + ' khắc ngày ' + dayEl + ' — bạn chiếm ưu thế',     en: 'Your ' + uEn + ' destiny dominates the ' + dEn + ' day — you hold the edge' },
+    sinh:    { vi: 'Bản mệnh ' + userEl + ' sinh ngày ' + dayEl + ' — giữ sức, tránh kiệt',   en: 'Your ' + uEn + ' drains into the ' + dEn + ' day — pace yourself'          },
+    bi_khac: { vi: 'Ngày ' + dayEl + ' khắc bản mệnh ' + userEl + ' — cần phòng thủ cẩn thận', en: dEn + ' day clashes with your ' + uEn + ' destiny — proceed with caution'   }
+  }[relation] || { vi: '', en: '' };
+}
+
+// Returns relation of dayElement TO userElement:
+//   bi_sinh = day nurtures user (auspicious), sinh = user nurtures day (draining)
+//   bi_khac = day conquers user (challenging), khac = user conquers day (dominating)
+//   hoa     = same element (stable)
+function computeDayRelation(dayElement, userElement) {
+  if (dayElement === userElement) return 'hoa';
+  const sinh = { 'Mộc':'Hỏa', 'Hỏa':'Thổ', 'Thổ':'Kim', 'Kim':'Thủy', 'Thủy':'Mộc' };
+  const khac = { 'Mộc':'Thổ', 'Thổ':'Thủy', 'Thủy':'Hỏa', 'Hỏa':'Kim', 'Kim':'Mộc' };
+  if (sinh[dayElement]  === userElement) return 'bi_sinh';
+  if (sinh[userElement] === dayElement)  return 'sinh';
+  if (khac[dayElement]  === userElement) return 'bi_khac';
+  if (khac[userElement] === dayElement)  return 'khac';
+  return 'hoa';
+}
+
 /* ── Daily Guidance Generator ── */
 function generateGuidance(chartData) {
   const { palaceData, cucHanh, banMenhHanh } = chartData;
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dayOfWeek = tomorrow.getDay();
+  const dayCC = (typeof getDayCanChi !== 'undefined')
+    ? getDayCanChi(tomorrow)
+    : { canIdx: 0, chiIdx: 0, sexIdx: 0, canChi: { vi: '', en: '' } };
+  const dayElement  = getDayElement(dayCC);
+  const dayRelation = computeDayRelation(dayElement, banMenhHanh);
   const dayHash = seedHash(banMenhHanh + palaceData[0].mainStars.join('') + tomorrow.toISOString().slice(0,10));
-  const grng = mulberry32(dayHash);
-
-  const DOS = [
-    {en: 'Focus on financial planning — your Tài Bạch energy is strong', vi: 'Tập trung vào kế hoạch tài chính — năng lượng Tài Bạch đang mạnh'},
-    {en: 'Spend quality time with family and loved ones', vi: 'Dành thời gian chất lượng cho gia đình và người thân'},
-    {en: 'Start a new creative project or hobby', vi: 'Bắt đầu một dự án sáng tạo hoặc sở thích mới'},
-    {en: 'Network and build professional connections', vi: 'Mở rộng mạng lưới và xây dựng quan hệ nghề nghiệp'},
-    {en: 'Meditate or practice mindfulness for inner peace', vi: 'Thiền định hoặc tập chánh niệm để an tâm'},
-    {en: 'Take a calculated risk on an investment or idea', vi: 'Mạnh dạn đầu tư hoặc theo đuổi ý tưởng mới'},
-    {en: 'Exercise and prioritize your physical health', vi: 'Tập thể dục và chú trọng sức khỏe thể chất'},
-    {en: 'Study or learn something new — knowledge flows easily', vi: 'Học hỏi kiến thức mới — dòng chảy tri thức thuận lợi'},
-    {en: 'Help someone in need — your karma is amplified', vi: 'Giúp đỡ người khác — phúc đức được nhân lên'},
-    {en: 'Organize your workspace for better productivity', vi: 'Sắp xếp không gian làm việc gọn gàng hơn'},
-    {en: 'Express your feelings honestly to someone close', vi: 'Bày tỏ cảm xúc chân thành với người thân'},
-    {en: 'Set clear goals and create an action plan', vi: 'Đặt mục tiêu rõ ràng và lên kế hoạch hành động'},
-    {en: 'Seek advice from a mentor or elder figure', vi: 'Tìm lời khuyên từ người cố vấn hoặc bậc tiền bối'},
-    {en: 'Dress well and present your best self publicly', vi: 'Ăn mặc đẹp và thể hiện bản thân tốt nhất'},
-    {en: 'Focus on long-term savings and financial security', vi: 'Tập trung vào tiết kiệm dài hạn và an toàn tài chính'}
-  ];
-  
-  const DONTS = [
-    {en: 'Avoid impulsive spending or risky gambles', vi: 'Tránh chi tiêu bốc đồng hoặc đánh bạc liều lĩnh'},
-    {en: 'Do not engage in arguments or confrontations', vi: 'Không nên tranh cãi hoặc đối đầu với ai'},
-    {en: 'Avoid signing important contracts without review', vi: 'Tránh ký kết hợp đồng quan trọng khi chưa xem xét kỹ'},
-    {en: 'Do not neglect your health or skip meals', vi: 'Không nên bỏ bê sức khỏe hoặc bỏ bữa ăn'},
-    {en: 'Avoid gossiping or speaking ill of others', vi: 'Tránh nói xấu hay thị phi về người khác'},
-    {en: 'Do not start major renovations or moves', vi: 'Không nên khởi công sửa chữa hay chuyển nhà lớn'},
-    {en: 'Avoid overworking — burnout threatens your vitality', vi: 'Tránh làm việc quá sức — kiệt sức đe dọa sinh lực'},
-    {en: 'Do not lend large sums of money today', vi: 'Không nên cho vay số tiền lớn hôm nay'},
-    {en: 'Avoid making major life decisions in haste', vi: 'Tránh đưa ra quyết định lớn trong vội vàng'},
-    {en: 'Do not ignore warning signs in relationships', vi: 'Không nên phớt lờ dấu hiệu cảnh báo trong quan hệ'},
-    {en: 'Avoid excessive alcohol or unhealthy indulgences', vi: 'Tránh uống rượu quá đà hoặc thói quen thiếu lành mạnh'},
-    {en: 'Do not travel long distances without preparation', vi: 'Không nên đi xa khi chưa chuẩn bị kỹ'},
-    {en: 'Avoid being stubborn — flexibility serves you better', vi: 'Tránh cố chấp — linh hoạt sẽ có lợi hơn'},
-    {en: 'Do not dismiss your intuition about a situation', vi: 'Không nên bỏ qua trực giác về một tình huống'},
-    {en: 'Avoid multitasking — focus on one thing at a time', vi: 'Tránh làm nhiều việc cùng lúc — hãy tập trung một thứ'}
-  ];
-
-  // --- Chart-Based Guidance Derivation ---
-  const dosIndices = new Set();
-  const dontsIndices = new Set();
-
-  // Determine current Đại Hạn
+  // --- Determine current Đại Hạn ---
   const currentYear = new Date().getFullYear();
   const age = chartData.year ? currentYear - chartData.year : 25;
   let currentDH = null;
@@ -1773,100 +1777,211 @@ function generateGuidance(chartData) {
     const parts = p.daiHan.split('–');
     if (parts.length === 2 && age >= parseInt(parts[0]) && age <= parseInt(parts[1])) currentDH = p;
   });
-
   const menhP = palaceData[0];
-  
-  // Logic for Dos
-  if (currentDH && ['Tài Bạch', 'Quan Lộc'].includes(currentDH.vi)) dosIndices.add(0);
-  if (currentDH && ['Phu Thê', 'Tử Tức', 'Phụ Mẫu', 'Huynh Đệ'].includes(currentDH.vi)) dosIndices.add(1);
-  if (menhP.mainStars.some(s => ['Tham Lang', 'Thiên Cơ'].includes(s))) dosIndices.add(2);
-  if (currentDH && ['Nô Bộc'].includes(currentDH.vi)) dosIndices.add(3);
-  if (currentDH && ['Phúc Đức'].includes(currentDH.vi)) dosIndices.add(4);
-  if (menhP.hoa.some(h => h.type.label === 'Hóa Quyền')) dosIndices.add(5);
-  if (currentDH && ['Tật Ách'].includes(currentDH.vi)) dosIndices.add(6);
-  if (menhP.hoa.some(h => h.type.label === 'Hóa Khoa')) dosIndices.add(7);
-  if (menhP.mainStars.some(s => ['Thiên Lương', 'Thiên Tướng'].includes(s))) dosIndices.add(8);
-  if (menhP.mainStars.some(s => ['Vũ Khúc', 'Thiên Phủ'].includes(s))) dosIndices.add(9);
-  if (menhP.mainStars.some(s => ['Cự Môn', 'Thái Âm'].includes(s))) dosIndices.add(10);
-  if (menhP.mainStars.some(s => ['Thất Sát', 'Phá Quân'].includes(s))) dosIndices.add(11);
-  if (menhP.mainStars.some(s => ['Thiên Cơ', 'Thái Dương'].includes(s))) dosIndices.add(12);
-  if (menhP.mainStars.some(s => ['Thái Dương', 'Tham Lang'].includes(s))) dosIndices.add(13);
-  if (menhP.auxStars.includes('Lộc Tồn') || menhP.hoa.some(h => h.type.label === 'Hóa Lộc')) dosIndices.add(14);
 
-  // Logic for Don'ts
-  const taiBach = palaceData[4] || {hoa:[], auxStars:[]};
-  const noBoc = palaceData[7] || {hoa:[]};
-  const tatAch = palaceData[5] || {hoa:[]};
-  const dienTrach = palaceData[9] || {hoa:[]};
-  const phuThe = palaceData[2] || {hoa:[]};
-  const thienDi = palaceData[6] || {hoa:[], branchIdx:-1};
-  
-  if (taiBach.hoa.some(h => h.type.label === 'Hóa Kỵ')) dontsIndices.add(0);
-  if (menhP.mainStars.includes('Cự Môn') || noBoc.hoa.some(h=>h.type.label==='Hóa Kỵ')) dontsIndices.add(1);
-  if (menhP.branchIdx === chartData.tuanPos1 || menhP.branchIdx === chartData.tuanPos2 || menhP.branchIdx === chartData.trietPos1 || menhP.branchIdx === chartData.trietPos2) dontsIndices.add(2);
-  if (tatAch.hoa.some(h => h.type.label === 'Hóa Kỵ')) dontsIndices.add(3);
-  if (menhP.mainStars.includes('Cự Môn')) dontsIndices.add(4);
-  if (dienTrach.hoa.some(h => h.type.label === 'Hóa Kỵ')) dontsIndices.add(5);
-  if (menhP.mainStars.some(s => ['Thất Sát', 'Phá Quân'].includes(s))) dontsIndices.add(6);
-  if (taiBach.auxStars.some(s => ['Địa Không', 'Địa Kiếp'].includes(s))) dontsIndices.add(7);
-  if (menhP.branchIdx === chartData.tuanPos1 || menhP.branchIdx === chartData.trietPos1) dontsIndices.add(8);
-  if (phuThe.hoa.some(h => h.type.label === 'Hóa Kỵ')) dontsIndices.add(9);
-  if (menhP.mainStars.includes('Tham Lang') || menhP.auxStars.includes('Thiên Riêu')) dontsIndices.add(10);
-  if (thienDi.hoa.some(h => h.type.label === 'Hóa Kỵ') || thienDi.branchIdx === chartData.tuanPos1 || thienDi.branchIdx === chartData.trietPos1) dontsIndices.add(11);
-  if (menhP.mainStars.some(s => ['Tử Vi', 'Vũ Khúc'].includes(s))) dontsIndices.add(12);
-  if (menhP.mainStars.some(s => ['Thái Âm', 'Thiên Cơ'].includes(s))) dontsIndices.add(13);
-  if (menhP.mainStars.includes('Thiên Đồng')) dontsIndices.add(14);
+  // --- DO pool — 25 tagged items (chart×10, element×10, relation×3, general×2) ---
+  const DOS = [
+    // chart-condition (10)
+    { vi: 'Tập trung vào kế hoạch tài chính — năng lượng Tài Bạch đang mạnh', en: 'Focus on financial planning — your wealth palace energy is strong',
+      condition: (mp, dh) => dh && ['Tài Bạch','Quan Lộc'].includes(dh.vi),
+      tags: ['daihan:Tài Bạch','daihan:Quan Lộc'], reason: { vi: 'Đại Hạn đang đi qua cung tài lộc', en: 'Major cycle is transiting your wealth palace' } },
+    { vi: 'Dành thời gian chất lượng cho gia đình và người thân', en: 'Spend quality time with family and loved ones',
+      condition: (mp, dh) => dh && ['Phu Thê','Tử Tức','Phụ Mẫu','Huynh Đệ'].includes(dh.vi),
+      tags: ['daihan:Phu Thê','daihan:Tử Tức','daihan:Phụ Mẫu'], reason: { vi: 'Đại Hạn nhấn mạnh quan hệ gia đình', en: 'Major cycle highlights family bonds' } },
+    { vi: 'Bắt đầu một dự án sáng tạo hoặc sở thích mới', en: 'Start a new creative project or hobby',
+      condition: (mp) => mp.mainStars.some(s => ['Tham Lang','Thiên Cơ'].includes(s)),
+      tags: ['element:Mộc','element:Thủy','relation:bi_sinh'], reason: { vi: 'Tham Lang / Thiên Cơ hỗ trợ sáng tạo', en: 'Tham Lang / Thiên Cơ supports creative initiatives' } },
+    { vi: 'Mở rộng mạng lưới và xây dựng quan hệ nghề nghiệp', en: 'Network and build professional connections',
+      condition: (mp, dh) => dh && dh.vi === 'Nô Bộc',
+      tags: ['daihan:Nô Bộc','relation:sinh'], reason: { vi: 'Đại Hạn Nô Bộc thuận lợi cho kết nối xã hội', en: 'Nô Bộc major cycle favors social connections' } },
+    { vi: 'Thiền định hoặc tập chánh niệm để tịnh tâm', en: 'Meditate or practice mindfulness for inner peace',
+      condition: (mp, dh) => dh && dh.vi === 'Phúc Đức',
+      tags: ['daihan:Phúc Đức','relation:hoa'], reason: { vi: 'Đại Hạn Phúc Đức thích hợp tu dưỡng tinh thần', en: 'Phúc Đức cycle supports spiritual cultivation' } },
+    { vi: 'Mạnh dạn khởi xướng dự án và thể hiện quyền lực hôm nay', en: 'Boldly lead initiatives and assert your authority today',
+      condition: (mp) => mp.hoa.some(h => h.type.label === 'Hóa Quyền'),
+      tags: ['relation:khac','relation:bi_sinh'], reason: { vi: 'Hóa Quyền trong cung Mệnh tăng cường uy lực', en: 'Hóa Quyền in Mệnh amplifies leadership energy' } },
+    { vi: 'Tập thể dục và chú trọng sức khỏe thể chất', en: 'Exercise and prioritize your physical health',
+      condition: (mp, dh) => dh && dh.vi === 'Tật Ách',
+      tags: ['daihan:Tật Ách'], reason: { vi: 'Đại Hạn Tật Ách cần chú ý sức khỏe chủ động', en: 'Tật Ách major cycle calls for proactive health care' } },
+    { vi: 'Học hỏi kiến thức mới — dòng chảy tri thức đang thuận lợi', en: 'Study or learn something new — knowledge flows easily',
+      condition: (mp) => mp.hoa.some(h => h.type.label === 'Hóa Khoa'),
+      tags: ['relation:bi_sinh','element:Thủy'], reason: { vi: 'Hóa Khoa trong cung Mệnh hỗ trợ học vấn', en: 'Hóa Khoa in Mệnh supports intellectual pursuits' } },
+    { vi: 'Giúp đỡ người khác — phúc đức được nhân lên hôm nay', en: 'Help someone in need — your good karma is amplified today',
+      condition: (mp) => mp.mainStars.some(s => ['Thiên Lương','Thiên Tướng'].includes(s)),
+      tags: ['general','relation:bi_sinh'], reason: { vi: 'Thiên Lương / Thiên Tướng nhấn mạnh đức hạnh', en: 'Thiên Lương / Thiên Tướng emphasizes virtue and generosity' } },
+    { vi: 'Tập trung vào tiết kiệm dài hạn và an toàn tài chính', en: 'Focus on long-term savings and financial security',
+      condition: (mp) => mp.auxStars.includes('Lộc Tồn') || mp.hoa.some(h => h.type.label === 'Hóa Lộc'),
+      tags: ['daihan:Tài Bạch','relation:bi_sinh'], reason: { vi: 'Lộc Tồn / Hóa Lộc hỗ trợ tích lũy tài sản bền vững', en: 'Lộc Tồn / Hóa Lộc supports steady wealth accumulation' } },
+    // day-element (10) — 2 per element
+    { vi: 'Chú trọng sự tỉ mỉ và hoàn thiện — ngày Kim lợi cho chi tiết', en: 'Focus on precision and detail — Metal day sharpens the mind',
+      condition: () => false, tags: ['element:Kim'], reason: { vi: 'Ngày Kim tăng cường tư duy logic và kỷ luật', en: 'Metal day strengthens logical thinking and discipline' } },
+    { vi: 'Ký kết thỏa thuận và đưa ra quyết định dứt khoát', en: 'Sign agreements and make firm, decisive commitments',
+      condition: () => false, tags: ['element:Kim'], reason: { vi: 'Năng lượng Kim ngày hỗ trợ cam kết và quyết đoán', en: 'Metal day energy supports commitment and decisiveness' } },
+    { vi: 'Khởi đầu kế hoạch mới — gieo hạt giống cho tương lai', en: 'Launch new plans and plant seeds for future growth',
+      condition: () => false, tags: ['element:Mộc'], reason: { vi: 'Ngày Mộc mang sinh khí cho sự khởi đầu', en: 'Wood day carries life force for new beginnings' } },
+    { vi: 'Mở rộng tầm nhìn sáng tạo, làm việc trong không gian thiên nhiên', en: 'Expand creative vision and work in natural surroundings',
+      condition: () => false, tags: ['element:Mộc'], reason: { vi: 'Mộc là hành của tăng trưởng và sáng tạo tự nhiên', en: 'Wood governs growth and natural creativity' } },
+    { vi: 'Nghiên cứu, đọc sách và thuận theo dòng chảy của ngày', en: 'Study, research, and move with the natural flow today',
+      condition: () => false, tags: ['element:Thủy'], reason: { vi: 'Ngày Thủy thúc đẩy trí tuệ và sự linh hoạt', en: 'Water day promotes intellect and adaptability' } },
+    { vi: 'Kết nối xã hội, chia sẻ ý tưởng với người xung quanh', en: 'Make social connections and share ideas with others',
+      condition: () => false, tags: ['element:Thủy'], reason: { vi: 'Thủy chảy qua mọi ngõ ngách, lợi cho giao tiếp', en: 'Water flows everywhere — ideal for communication' } },
+    { vi: 'Thể hiện bản thân mạnh mẽ và tỏa sáng trước đám đông', en: 'Express yourself boldly and shine in public settings',
+      condition: () => false, tags: ['element:Hỏa'], reason: { vi: 'Ngày Hỏa khuếch đại sức tỏa sáng và uy phong', en: 'Fire day amplifies charisma and public presence' } },
+    { vi: 'Lãnh đạo nhóm, truyền cảm hứng và thúc đẩy dự án', en: 'Lead your team, inspire others and drive projects forward',
+      condition: () => false, tags: ['element:Hỏa'], reason: { vi: 'Hỏa hành mang lửa nhiệt huyết cho vai trò lãnh đạo', en: 'Fire element brings passionate energy to leadership' } },
+    { vi: 'Đầu tư xây dựng nền tảng lâu dài, củng cố những điều ổn định', en: 'Invest in long-term foundations and consolidate stability',
+      condition: () => false, tags: ['element:Thổ'], reason: { vi: 'Ngày Thổ vững chắc, lợi cho xây dựng và bền vững', en: 'Earth day is solid — ideal for building and stability' } },
+    { vi: 'Chăm sóc gia đình và cải thiện không gian sống của bạn', en: 'Tend to family matters and improve your living space',
+      condition: () => false, tags: ['element:Thổ'], reason: { vi: 'Thổ hành liên kết với gia đình, nhà cửa và sự ổn định', en: 'Earth connects to family, home, and domestic stability' } },
+    // relation-specific (3)
+    { vi: 'Theo đuổi mục tiêu tham vọng — hôm nay năng lượng thuận sinh cho bạn', en: 'Pursue ambitious goals — today\'s energy flows in your favor',
+      condition: () => false, tags: ['relation:bi_sinh'], reason: { vi: 'Ngày hành sinh bản mệnh — đây là ngày rất thuận', en: 'Day element nurtures your destiny element — auspicious day' } },
+    { vi: 'Duy trì nhịp công việc đều đặn, tích lũy tiến độ bền vững', en: 'Maintain steady rhythms and accumulate consistent progress',
+      condition: () => false, tags: ['relation:hoa'], reason: { vi: 'Ngày cùng hành với bản mệnh — thuận hòa và ổn định', en: 'Same element day — conditions are harmonious and stable' } },
+    { vi: 'Củng cố phòng thủ: bảo vệ tài sản và sắp xếp lại kế hoạch', en: 'Fortify your defenses: safeguard assets and reassess plans',
+      condition: () => false, tags: ['relation:bi_khac'], reason: { vi: 'Ngày hành khắc bản mệnh — cần phòng thủ cẩn thận', en: 'Day element clashes with your destiny — be cautious and defensive' } },
+    // general fallback (2)
+    { vi: 'Thực hành lòng biết ơn và dành thời gian tĩnh lặng cho bản thân', en: 'Practice gratitude and carve out quiet time for yourself',
+      condition: () => false, tags: ['general'], reason: { vi: 'Mọi ngày đều là cơ hội để nuôi dưỡng tâm trí', en: 'Every day is an opportunity to nurture the mind' } },
+    { vi: 'Đặt ra ý định rõ ràng và xem xét lại tiến trình của bạn', en: 'Set clear intentions and review your current progress',
+      condition: () => false, tags: ['general'], reason: { vi: 'Ý định rõ ràng là nền tảng của mọi thành công', en: 'Clear intention is the foundation of all achievement' } }
+  ];
 
-  // Deterministic fallback (using day string or similar to rotate unused items daily)
-  const dosArr = Array.from(dosIndices);
-  const dontsArr = Array.from(dontsIndices);
+  // --- DON'T pool — 25 tagged items ---
+  const DONTS = [
+    // chart-condition (10)
+    { vi: 'Tránh chi tiêu bốc đồng hoặc đánh bạc liều lĩnh', en: 'Avoid impulsive spending or risky financial gambles',
+      condition: (mp, dh, cd) => { const tb = cd.palaceData[4] || {hoa:[]}; return tb.hoa.some(h => h.type.label === 'Hóa Kỵ'); },
+      tags: ['daihan:Tài Bạch'], reason: { vi: 'Hóa Kỵ tại Tài Bạch cảnh báo rủi ro tài chính', en: 'Hóa Kỵ at Tài Bạch warns of financial risk' } },
+    { vi: 'Không nên tranh cãi hoặc đối đầu với ai hôm nay', en: 'Avoid arguments and direct confrontations today',
+      condition: (mp, dh, cd) => { const nb = cd.palaceData[7] || {hoa:[]}; return mp.mainStars.includes('Cự Môn') || nb.hoa.some(h => h.type.label === 'Hóa Kỵ'); },
+      tags: ['daihan:Nô Bộc'], reason: { vi: 'Cự Môn / Nô Bộc Kỵ dễ gây mâu thuẫn ngôn từ', en: 'Cự Môn / Nô Bộc Kỵ increases risk of verbal conflict' } },
+    { vi: 'Tránh ký kết hợp đồng quan trọng khi chưa xem xét kỹ', en: 'Avoid signing important contracts without thorough review',
+      condition: (mp, dh, cd) => mp.branchIdx === cd.tuanPos1 || mp.branchIdx === cd.tuanPos2 || mp.branchIdx === cd.trietPos1 || mp.branchIdx === cd.trietPos2,
+      tags: ['relation:bi_khac'], reason: { vi: 'Cung Mệnh nằm trong vùng Tuần / Triệt', en: 'Mệnh palace falls in Tuần/Triệt — be careful with commitments' } },
+    { vi: 'Không nên bỏ bê sức khỏe hoặc bỏ bữa ăn hôm nay', en: 'Do not neglect your health or skip meals today',
+      condition: (mp, dh, cd) => { const ta = cd.palaceData[5] || {hoa:[]}; return ta.hoa.some(h => h.type.label === 'Hóa Kỵ'); },
+      tags: ['daihan:Tật Ách'], reason: { vi: 'Hóa Kỵ tại Tật Ách đòi hỏi chú ý sức khỏe', en: 'Hóa Kỵ at Tật Ách requires careful health attention' } },
+    { vi: 'Tránh nói xấu hay thị phi về người khác', en: 'Avoid gossip and speaking ill of others',
+      condition: (mp) => mp.mainStars.includes('Cự Môn'),
+      tags: ['daihan:Mệnh'], reason: { vi: 'Cự Môn trong cung Mệnh khuếch đại lời nói — dùng cẩn thận', en: 'Cự Môn in Mệnh amplifies words — use speech carefully' } },
+    { vi: 'Không nên khởi công sửa chữa lớn hay chuyển nhà hôm nay', en: 'Avoid starting major renovations or household moves today',
+      condition: (mp, dh, cd) => { const dt = cd.palaceData[9] || {hoa:[]}; return dt.hoa.some(h => h.type.label === 'Hóa Kỵ'); },
+      tags: ['daihan:Điền Trạch'], reason: { vi: 'Hóa Kỵ tại Điền Trạch cảnh báo về bất động sản', en: 'Hóa Kỵ at Điền Trạch warns of property risk' } },
+    { vi: 'Tránh làm việc quá sức — kiệt sức đe dọa sinh lực của bạn', en: 'Avoid overworking — burnout threatens your vitality today',
+      condition: (mp) => mp.mainStars.some(s => ['Thất Sát','Phá Quân'].includes(s)),
+      tags: ['daihan:Mệnh','relation:bi_khac'], reason: { vi: 'Thất Sát / Phá Quân thúc đẩy mạnh mẽ nhưng dễ kiệt sức', en: 'Thất Sát / Phá Quân drives intensity but risks exhaustion' } },
+    { vi: 'Không nên cho vay số tiền lớn hôm nay', en: 'Avoid lending large sums of money today',
+      condition: (mp, dh, cd) => { const tb = cd.palaceData[4] || {auxStars:[]}; return (tb.auxStars || []).some(s => ['Địa Không','Địa Kiếp'].includes(s)); },
+      tags: ['daihan:Tài Bạch'], reason: { vi: 'Địa Không / Địa Kiếp tại Tài Bạch gây rủi ro tiền bạc', en: 'Địa Không / Địa Kiếp at Tài Bạch creates financial loss risk' } },
+    { vi: 'Tránh đưa ra quyết định lớn trong vội vàng', en: 'Avoid making major life decisions in haste',
+      condition: (mp, dh, cd) => mp.branchIdx === cd.tuanPos1 || mp.branchIdx === cd.trietPos1,
+      tags: ['relation:bi_khac'], reason: { vi: 'Vùng Tuần / Triệt hạn chế năng lượng cung Mệnh', en: 'Tuần/Triệt restricts Mệnh palace energy' } },
+    { vi: 'Không nên phớt lờ dấu hiệu cảnh báo trong quan hệ tình cảm', en: 'Do not ignore warning signs in your relationships',
+      condition: (mp, dh, cd) => { const pt = cd.palaceData[2] || {hoa:[]}; return pt.hoa.some(h => h.type.label === 'Hóa Kỵ'); },
+      tags: ['daihan:Phu Thê'], reason: { vi: 'Hóa Kỵ tại Phu Thê cảnh báo căng thẳng tình cảm', en: 'Hóa Kỵ at Phu Thê warns of relationship tension' } },
+    // day-element (10) — 2 per element
+    { vi: 'Tránh thiếu quyết đoán — ngày Kim không tha thứ sự do dự', en: 'Avoid indecision — Metal day does not forgive hesitation',
+      condition: () => false, tags: ['element:Kim'], reason: { vi: 'Ngày Kim đòi hỏi sự quyết đoán, do dự sẽ bất lợi', en: 'Metal day demands decisiveness — hesitation backfires' } },
+    { vi: 'Tránh đối đầu cảm xúc — ngày Kim thiên về lý trí', en: 'Avoid emotional confrontations — Metal day favors reason over feelings',
+      condition: () => false, tags: ['element:Kim'], reason: { vi: 'Năng lượng Kim cứng rắn — cảm xúc dễ leo thang', en: 'Metal energy is rigid — emotions can escalate quickly' } },
+    { vi: 'Tránh kiềm chế sáng tạo — ngày Mộc cần tự do phát triển', en: 'Avoid suppressing creativity — Wood day needs room to grow',
+      condition: () => false, tags: ['element:Mộc'], reason: { vi: 'Chặn Mộc khiến năng lượng ngày tắc nghẽn', en: 'Blocking Wood energy creates stagnation on this day' } },
+    { vi: 'Tránh dàn trải quá rộng — ngày Mộc dễ khiến bạn phân tâm', en: 'Avoid spreading yourself too thin — Wood day can scatter focus',
+      condition: () => false, tags: ['element:Mộc'], reason: { vi: 'Tính phát triển của Mộc dễ dẫn đến phân tán nếu không kiểm soát', en: 'Wood\'s expansive nature can scatter focus without control' } },
+    { vi: 'Tránh cứng nhắc và bảo thủ — ngày Thủy cần sự linh hoạt', en: 'Avoid rigidity — Water day rewards adaptability and flow',
+      condition: () => false, tags: ['element:Thủy'], reason: { vi: 'Thủy chảy quanh chướng ngại, không chống lại chúng', en: 'Water flows around obstacles — don\'t resist the current' } },
+    { vi: 'Tránh cô lập bản thân — ngày Thủy khuyến khích sự kết nối', en: 'Avoid isolating yourself — Water day encourages connection',
+      condition: () => false, tags: ['element:Thủy'], reason: { vi: 'Thủy cần chuyển động và kết nối, không đình trệ', en: 'Water needs movement and connection — stagnation harms' } },
+    { vi: 'Tránh nóng giận và phản ứng thái quá — ngày Hỏa dễ bùng phát', en: 'Avoid hot tempers and overreacting — Fire day burns brightly',
+      condition: () => false, tags: ['element:Hỏa'], reason: { vi: 'Hỏa vốn nhanh bùng, kiểm soát cảm xúc là yếu tố then chốt', en: 'Fire ignites quickly — emotional control is essential today' } },
+    { vi: 'Tránh nhận thêm cam kết mà bạn không thể hoàn thành', en: 'Avoid taking on commitments you cannot realistically complete',
+      condition: () => false, tags: ['element:Hỏa'], reason: { vi: 'Nhiệt huyết Hỏa dễ dẫn đến hứa quá nhiều', en: 'Fire\'s enthusiasm can lead to overpromising' } },
+    { vi: 'Tránh gây xáo trộn lớn hay thay đổi đột ngột hôm nay', en: 'Avoid causing major disruptions or sudden changes today',
+      condition: () => false, tags: ['element:Thổ'], reason: { vi: 'Ngày Thổ cần sự ổn định, đột biến sẽ gây hại', en: 'Earth day requires stability — sudden disruption is harmful' } },
+    { vi: 'Tránh trì hoãn trách nhiệm — ngày Thổ đòi hỏi sự thực hiện', en: 'Avoid procrastinating on responsibilities — Earth day holds you accountable',
+      condition: () => false, tags: ['element:Thổ'], reason: { vi: 'Thổ vững chắc đòi hỏi hành động chứ không phải lời hứa suông', en: 'Solid Earth demands action, not empty promises' } },
+    // relation-specific (3)
+    { vi: 'Đừng lãng phí năng lượng thuận lợi vào việc tầm thường', en: 'Do not waste this auspicious energy on trivial matters',
+      condition: () => false, tags: ['relation:bi_sinh'], reason: { vi: 'Ngày sinh bản mệnh — hãy dùng vào điều có ý nghĩa', en: 'Day nurtures your element — invest in something meaningful' } },
+    { vi: 'Không nên nhận thêm cam kết rủi ro cao trong ngày xung khắc', en: 'Avoid high-risk commitments on a clashing day',
+      condition: () => false, tags: ['relation:bi_khac'], reason: { vi: 'Ngày hành khắc bản mệnh — rủi ro tăng cao hôm nay', en: 'Clashing day element raises your vulnerability' } },
+    { vi: 'Đừng kiệt sức vì lo cho người khác quá nhiều hôm nay', en: 'Avoid depleting yourself by over-giving to others today',
+      condition: () => false, tags: ['relation:sinh'], reason: { vi: 'Bản mệnh đang sinh vào ngày — dành dưỡng sức cho bản thân', en: 'Your element is draining into the day — conserve your energy' } },
+    // general fallback (2)
+    { vi: 'Tránh phân tích quá mức dẫn đến tê liệt quyết đoán', en: 'Avoid overthinking that leads to paralysis',
+      condition: () => false, tags: ['general'], reason: { vi: 'Sự rõ ràng đến từ hành động, không phải suy nghĩ không dứt', en: 'Clarity comes from action, not endless deliberation' } },
+    { vi: 'Đừng phớt lờ tín hiệu từ cơ thể — hãy nghỉ ngơi khi cần', en: 'Do not ignore your body\'s signals — rest when needed',
+      condition: () => false, tags: ['general'], reason: { vi: 'Sức khỏe là nền tảng của mọi thành công', en: 'Health is the foundation of all achievement' } }
+  ];
 
-  if (dosArr.length < 4 || dontsArr.length < 4) {
-    const dayHash = seedHash(chartData.menhChu + tomorrow.toISOString().slice(0,10));
-    const grng = mulberry32(dayHash);
-    
-    while (dosArr.length < 4 && dosArr.length < DOS.length) {
-      const idx = Math.floor(grng() * DOS.length);
-      if (!dosArr.includes(idx)) dosArr.push(idx);
-    }
-    while (dontsArr.length < 4 && dontsArr.length < DONTS.length) {
-      const idx = Math.floor(grng() * DONTS.length);
-      if (!dontsArr.includes(idx)) dontsArr.push(idx);
-    }
-  }
+  // --- Weighted Selection (Phase 4) ---
+  const scoreItem = (item) => {
+    let score = 0;
+    try { if (item.condition(menhP, currentDH, chartData)) score += 3; } catch(e) {}
+    if (item.tags.some(t => t === 'element:' + dayElement))   score += 2;
+    if (item.tags.some(t => t === 'relation:' + dayRelation)) score += 2;
+    if (currentDH && item.tags.some(t => t === 'daihan:' + currentDH.vi)) score += 2;
+    if (item.tags.includes('general'))                         score += 0.5;
+    return score;
+  };
 
-  // Shuffle the final selection pseudo-randomly so the specific chart-based ones aren't always first
-  const displayHash = seedHash(chartData.cuc.vi + tomorrow.toISOString().slice(0,10));
-  const prng = mulberry32(displayHash);
-  dosArr.sort(() => prng() - 0.5);
-  dontsArr.sort(() => prng() - 0.5);
+  const jitter = mulberry32(dayHash);
 
-  const finalDos = dosArr.slice(0, 4);
-  const finalDonts = dontsArr.slice(0, 4);
+  const scoredDos = DOS.map(item => ({ item, score: scoreItem(item) + jitter() * 0.4 }));
+  scoredDos.sort((a, b) => b.score - a.score);
+  const finalDos = scoredDos.slice(0, 4).map(s => s.item);
 
-  const dosEn = finalDos.map(i => DOS[i].en);
-  const dosVi = finalDos.map(i => DOS[i].vi);
-  const dontsEn = finalDonts.map(i => DONTS[i].en);
-  const dontsVi = finalDonts.map(i => DONTS[i].vi);
+  const scoredDonts = DONTS.map(item => ({ item, score: scoreItem(item) + jitter() * 0.4 }));
+  scoredDonts.sort((a, b) => b.score - a.score);
+  const finalDonts = scoredDonts.slice(0, 4).map(s => s.item);
+
+  // --- Render ---
   const isVi = currentLang === 'vi';
+  const dateStr   = tomorrow.toLocaleDateString(isVi ? 'vi-VN' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStrVi = tomorrow.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const dateStrEn = tomorrow.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-  const dateStr = tomorrow.toLocaleDateString(isVi ? 'vi-VN' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const banner  = DAY_QUALITY_BANNERS[dayRelation] || { dayScore: 5, cssClass: 'hoa' };
+  const summary = buildBannerSummary(dayRelation, dayElement, banMenhHanh);
+  const dayElEn  = EL_NAMES[dayElement] || dayElement;
+  const userElEn = EL_NAMES[banMenhHanh] || banMenhHanh;
+  const destNoteVi = 'Bản mệnh ' + banMenhHanh + ' · Ngày ' + dayElement;
+  const destNoteEn = 'Your ' + userElEn + ' destiny · ' + dayElEn + ' day';
+  const destNote   = isVi ? destNoteVi : destNoteEn;
 
   const container = document.getElementById('guidance-content');
-  container.innerHTML = `
-    <div class="guidance-card do-card">
-      <h3>☀ <span data-en="What You Should Do" data-vi="Nên Làm">${isVi ? 'Nên Làm' : 'What You Should Do'}</span></h3>
-      <p class="guidance-date" data-en="${dateStr}" data-vi="${tomorrow.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}">${dateStr}</p>
-      <ul>${(isVi ? dosVi : dosEn).map(d => `<li>${d}</li>`).join('')}</ul>
-    </div>
-    <div class="guidance-card dont-card">
-      <h3>⚠ <span data-en="What You Should Avoid" data-vi="Nên Tránh">${isVi ? 'Nên Tránh' : 'What You Should Avoid'}</span></h3>
-      <p class="guidance-date" data-en="Based on your ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) destiny" data-vi="Dựa trên mệnh ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) của bạn">
-        ${isVi ? `Dựa trên mệnh ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) của bạn` : `Based on your ${banMenhHanh} (${EL_NAMES[banMenhHanh]}) destiny`}
-      </p>
-      <ul>${(isVi ? dontsVi : dontsEn).map(d => `<li>${d}</li>`).join('')}</ul>
-    </div>
-  `;
+  const renderItems = (items) => items.map(d =>
+    '<li>' +
+      '<span data-en="' + d.en.replace(/"/g,'&quot;') + '" data-vi="' + d.vi.replace(/"/g,'&quot;') + '">' + (isVi ? d.vi : d.en) + '</span>' +
+      '<span class="guidance-reason" data-en="' + d.reason.en.replace(/"/g,'&quot;') + '" data-vi="' + d.reason.vi.replace(/"/g,'&quot;') + '">' + (isVi ? d.reason.vi : d.reason.en) + '</span>' +
+    '</li>'
+  ).join('');
+
+  container.innerHTML =
+    '<div class="guidance-banner guidance-banner-' + banner.cssClass + '" aria-label="' + (isVi ? 'Chất lượng ngày mai' : 'Day astrological quality') + '">' +
+      '<div class="banner-day">' +
+        '<span class="banner-label" data-en="Tomorrow" data-vi="Ngày Mai">' + (isVi ? 'Ngày Mai' : 'Tomorrow') + '</span>' +
+        '<span class="banner-canchi" data-en="' + dayCC.canChi.en + '" data-vi="' + dayCC.canChi.vi + '">' + (isVi ? dayCC.canChi.vi : dayCC.canChi.en) + '</span>' +
+        '<span class="banner-element" data-en="' + dayElEn + '" data-vi="' + dayElement + '">' + (isVi ? dayElement : dayElEn) + '</span>' +
+      '</div>' +
+      '<div class="banner-quality">' +
+        '<span class="banner-score">' + banner.dayScore + '/10</span>' +
+        '<span class="banner-summary" data-en="' + summary.en.replace(/"/g,'&quot;') + '" data-vi="' + summary.vi.replace(/"/g,'&quot;') + '">' + (isVi ? summary.vi : summary.en) + '</span>' +
+      '</div>' +
+    '</div>' +
+    '<div class="guidance-card do-card">' +
+      '<h3>☀ <span data-en="What You Should Do" data-vi="Nên Làm">' + (isVi ? 'Nên Làm' : 'What You Should Do') + '</span></h3>' +
+      '<p class="guidance-date" data-en="' + dateStrEn + '" data-vi="' + dateStrVi + '">' + dateStr + '</p>' +
+      '<p class="guidance-destiny-note" data-en="' + destNoteEn + '" data-vi="' + destNoteVi + '">' + destNote + '</p>' +
+      '<ul>' + renderItems(finalDos) + '</ul>' +
+    '</div>' +
+    '<div class="guidance-card dont-card">' +
+      '<h3>⚠ <span data-en="What You Should Avoid" data-vi="Nên Tránh">' + (isVi ? 'Nên Tránh' : 'What You Should Avoid') + '</span></h3>' +
+      '<p class="guidance-date" data-en="' + dateStrEn + '" data-vi="' + dateStrVi + '">' + dateStr + '</p>' +
+      '<p class="guidance-destiny-note" data-en="' + destNoteEn + '" data-vi="' + destNoteVi + '">' + destNote + '</p>' +
+      '<ul>' + renderItems(finalDonts) + '</ul>' +
+    '</div>';
 }
 
 /* ── Form Submit ── */

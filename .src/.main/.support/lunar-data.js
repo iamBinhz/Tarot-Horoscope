@@ -316,8 +316,37 @@ function formatLunarDate(lunar, lang) {
 }
 
 // -------------------------------------------------------------------
+// getDayCanChi(date)
+//
+// Returns the sexagenary day Can-Chi for any JS Date (UTC).
+// Reference anchor: 2000-01-01 UTC = Mậu Dần day (canIdx=4, chiIdx=2, sexIdx=14).
+// -------------------------------------------------------------------
+const CAN_VI_DAY = ['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'];
+const CHI_VI_DAY = ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
+const CAN_EN_DAY = ['Giap','At','Binh','Dinh','Mau','Ky','Canh','Tan','Nham','Quy'];
+const CHI_EN_DAY = ['Ty','Suu','Dan','Mao','Thin','Ti','Ngo','Mui','Than','Dau','Tuat','Hoi'];
+
+function getDayCanChi(date) {
+  const ref = Date.UTC(2000, 0, 1);   // 2000-01-01 UTC = sexIdx 14 (Mậu Dần)
+  const d   = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const diffDays = Math.round((d - ref) / 86400000);
+  const sexIdx = ((14 + diffDays) % 60 + 60) % 60;
+  const canIdx = sexIdx % 10;
+  const chiIdx = sexIdx % 12;
+  return {
+    canIdx,
+    chiIdx,
+    sexIdx,
+    canChi: {
+      vi: `${CAN_VI_DAY[canIdx]} ${CHI_VI_DAY[chiIdx]}`,
+      en: `${CAN_EN_DAY[canIdx]} ${CHI_EN_DAY[chiIdx]}`
+    }
+  };
+}
+
+// -------------------------------------------------------------------
 // Expose as module if available, otherwise attach to window
 // -------------------------------------------------------------------
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { gregorianToLunar, formatLunarDate, jdn, getYearInfo, findLunarDate };
+  module.exports = { gregorianToLunar, formatLunarDate, jdn, getYearInfo, findLunarDate, getDayCanChi };
 }
