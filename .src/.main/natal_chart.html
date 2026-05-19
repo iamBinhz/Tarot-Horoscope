@@ -185,6 +185,31 @@
     <div id="tongluan-content"></div>
   </div>
 
+  <!-- Timing Lookup Panel (Phase 5 Task 2.3) -->
+  <div id="timing-area">
+    <div class="divider"><span class="divider-line"></span><span class="divider-sym">⏳</span><span class="divider-line"></span></div>
+    <p class="interp-title" data-en="Period Lookup" data-vi="Tra Cứu Vận Hạn">Tra Cứu Vận Hạn</p>
+    <div id="timingPanel" class="timing-panel">
+      <div class="timing-inputs">
+        <label>
+          <span data-vi="Năm:" data-en="Year:">Năm:</span>
+          <input type="number" id="timingYear" min="1900" max="2100">
+        </label>
+        <label>
+          <span data-vi="Tháng âm:" data-en="Lunar month:">Tháng âm:</span>
+          <select id="timingMonth">
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5">5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+            <option value="10">10</option><option value="11">11</option><option value="12">12</option>
+          </select>
+        </label>
+        <button type="button" id="lookupTimingBtn" data-vi="Tra cứu" data-en="Lookup">Tra cứu</button>
+      </div>
+      <div id="timingResult" class="timing-result"></div>
+    </div>
+  </div>
+
   <div class="divider"><span class="divider-line"></span><span class="divider-sym">✧</span><span class="divider-line"></span></div>
 
   <!-- Knowledge Section -->
@@ -225,7 +250,10 @@
 
 <script src=".support/lunar-data.js"></script>
 <script src=".support/tuvi-data.js"></script>
+<script src=".support/tuvi-engine.js"></script>
 <script src=".support/kinh-dich-data.js"></script>
+<script src=".support/kinh-dich-engine.js"></script>
 <script src=".support/natal_chart.js"></script>
+<script src=".support/kinh-dich-sidebar.js"></script>
 </body>
 </html>

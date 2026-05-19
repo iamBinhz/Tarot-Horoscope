@@ -1,5 +1,5 @@
-/* ── kinh-dich-data.js — Kinh Dịch / Lục Hào data + engine ── */
-/* Pure data + computation. NO DOM manipulation. */
+/* ── kinh-dich-data.js — Kinh Dịch / Lục Hào pure data ── */
+/* Constants only. All algorithms live in kinh-dich-engine.js. NO DOM. */
 
 // ── BAT_QUAI (8 trigrams) ──
 // Index: 0=Càn, 1=Đoài, 2=Ly, 3=Chấn, 4=Tốn, 5=Khảm, 6=Cấn, 7=Khôn
@@ -70,16 +70,6 @@ const LUC_THAN_MAP = {
   'bi_sinh': { vi: 'Phụ Mẫu', en: 'Parents'        },
   'bi_khac': { vi: 'Quan Quỷ', en: 'Officer/Ghost' }
 };
-
-// ── getLucThan(queNguHanh, diaChi) ──
-function getLucThan(queNguHanh, diaChi) {
-  if (typeof DIA_CHI_NGU_HANH === 'undefined') return null;
-  if (typeof NGU_HANH_RELATION === 'undefined') return null;
-  const haoNH = DIA_CHI_NGU_HANH[diaChi];
-  if (!haoNH) return null;
-  const rel = NGU_HANH_RELATION[queNguHanh][haoNH];
-  return LUC_THAN_MAP[rel] || null;
-}
 
 // ── QUE_DATA — 64 hexagrams (Văn Vương order, 0-indexed) ──
 // thuong = upper trigram index (BAT_QUAI), ha = lower trigram index
@@ -899,120 +889,7 @@ const QUE_LOOKUP_FULL = (function() {
   return tbl;
 })();
 
-// ── findQuai(hao3) — match 3-bit array to BAT_QUAI index ──
-// hao3: [bit0, bit1, bit2] where bit = 1 (yang) or 0 (yin), bottom to top
-function findQuai(hao3) {
-  if (typeof BAT_QUAI === 'undefined') return -1;
-  for (let i = 0; i < BAT_QUAI.length; i++) {
-    const q = BAT_QUAI[i];
-    if (q.hao[0] === hao3[0] && q.hao[1] === hao3[1] && q.hao[2] === hao3[2]) return i;
-  }
-  return -1;
-}
-
-// ── findQueIdx(ngoai, noi) — lookup from QUE_LOOKUP_FULL ──
-function findQueIdx(ngoai, noi) {
-  if (typeof QUE_LOOKUP_FULL === 'undefined') return -1;
-  return QUE_LOOKUP_FULL[ngoai][noi];
-}
-
-// ── gieoQue() — 3-coin method, returns array of 6 values (6-9) ──
-// 3 coins: heads=3, tails=2 each toss
-// Sum per line: 6=LãoÂm(dong→dương), 7=ThiếuDương(tinh), 8=ThiếuÂm(tinh), 9=LãoDương(dong→âm)
-function gieoQue() {
-  const result = [];
-  for (let i = 0; i < 6; i++) {
-    // Each coin: 0=tails(2), 1=heads(3)
-    const coins = [
-      Math.random() < 0.5 ? 2 : 3,
-      Math.random() < 0.5 ? 2 : 3,
-      Math.random() < 0.5 ? 2 : 3
-    ];
-    result.push(coins[0] + coins[1] + coins[2]); // 6, 7, 8, or 9
-  }
-  return result; // hào 1 = result[0] (bottom)
-}
-
-// ── xacDinhQue(haoArray) — returns full quẻ info ──
-// haoArray: [h1,h2,h3,h4,h5,h6] values 6-9
-// Returns: { queChinh, queBien, dongHao, noiQuai, ngoaiQuai, noiQuaiBien, ngoaiQuaiBien, haoArray }
-function xacDinhQue(haoArray) {
-  if (typeof BAT_QUAI === 'undefined' || typeof QUE_DATA === 'undefined') return null;
-
-  // Convert value to yang(1)/yin(0) bit
-  function toBit(v) { return (v === 9 || v === 7) ? 1 : 0; }
-  // Biến hào: 9→0, 6→1
-  function toBienBit(v) {
-    if (v === 9) return 0;
-    if (v === 6) return 1;
-    return toBit(v);
-  }
-
-  const bits = haoArray.map(toBit);           // quẻ chính bits
-  const bienBits = haoArray.map(toBienBit);   // quẻ biến bits
-
-  // nội quái = hào 1-3 (indices 0-2), ngoại quái = hào 4-6 (indices 3-5)
-  const noiQuai = findQuai([bits[0], bits[1], bits[2]]);
-  const ngoaiQuai = findQuai([bits[3], bits[4], bits[5]]);
-  const noiQuaiBien = findQuai([bienBits[0], bienBits[1], bienBits[2]]);
-  const ngoaiQuaiBien = findQuai([bienBits[3], bienBits[4], bienBits[5]]);
-
-  const queChinhIdx = findQueIdx(ngoaiQuai, noiQuai);
-  const queBienIdx = findQueIdx(ngoaiQuaiBien, noiQuaiBien);
-
-  const dongHao = haoArray.map((v, i) => (v === 6 || v === 9) ? i + 1 : null).filter(Boolean);
-
-  return {
-    haoArray,
-    noiQuai,
-    ngoaiQuai,
-    noiQuaiBien,
-    ngoaiQuaiBien,
-    queChinhIdx,
-    queBienIdx,
-    queChinh: queChinhIdx >= 0 ? QUE_DATA[queChinhIdx] : null,
-    queBien: (queBienIdx >= 0 && dongHao.length > 0) ? QUE_DATA[queBienIdx] : null,
-    dongHao
-  };
-}
-
-// ── anLucThan(queData) — assign Địa Chi + Lục Thân to each hào ──
-// queData: result from xacDinhQue()
-// Returns array of 6 objects: { pos(1-6), diaChi, nguHanh, lucThan, dong, value }
-function anLucThan(queData) {
-  if (!queData || typeof NAP_GIAP_IDX === 'undefined') return null;
-  if (typeof BAT_QUAI === 'undefined' || typeof QUE_DATA === 'undefined') return null;
-
-  const { haoArray, noiQuai, ngoaiQuai, queChinh } = queData;
-  if (noiQuai < 0 || ngoaiQuai < 0 || !queChinh) return null;
-
-  // Ngũ Hành of the hexagram = upper trigram's Ngũ Hành (cung)
-  const queNguHanh = BAT_QUAI[ngoaiQuai].nguHanh;
-
-  const noiNap = NAP_GIAP_IDX[noiQuai];
-  const ngoaiNap = NAP_GIAP_IDX[ngoaiQuai];
-
-  // hào 1-3: nội quái noi[0..2], hào 4-6: ngoại quái ngoai[0..2]
-  const diaChiMap = [
-    noiNap.noi[0],   // hào 1
-    noiNap.noi[1],   // hào 2
-    noiNap.noi[2],   // hào 3
-    ngoaiNap.ngoai[0], // hào 4
-    ngoaiNap.ngoai[1], // hào 5
-    ngoaiNap.ngoai[2]  // hào 6
-  ];
-
-  return haoArray.map(function(value, idx) {
-    const pos = idx + 1;
-    const diaChi = diaChiMap[idx];
-    const nguHanh = (typeof DIA_CHI_NGU_HANH !== 'undefined') ? DIA_CHI_NGU_HANH[diaChi] : null;
-    const lucThan = nguHanh ? getLucThan(queNguHanh, diaChi) : null;
-    const dong = (value === 6 || value === 9);
-    return { pos, diaChi, nguHanh, lucThan, dong, value };
-  });
-}
-
-// ── Phase 5: Dụng Thần, Nhật Thần, Lục Thú ──
+// ── Dụng Thần / Nhật Thần / Lục Thú data ──
 
 /* ── Dụng Thần mapping: question domain → target Lục Thân ── */
 const DUNG_THAN_MAP = {
@@ -1033,84 +910,6 @@ const LUC_THAN_NAMES_EN = {
   'Quan Quỷ': 'Officer',
 };
 
-/**
- * Determine Dụng Thần (acting spirit) based on question domain
- * @param {Array} haoDetails - Array from anLucThan()
- * @param {string} linhVuc - 'tai' | 'quan' | 'hon' | 'suc'
- * @param {string} gender - 'm' | 'f' (only used for 'hon')
- * @returns {Object|null} The hào object that is the Dụng Thần, or null if not found
- */
-function getDungThan(haoDetails, linhVuc, gender) {
-  if (!haoDetails || !Array.isArray(haoDetails)) return null;
-  gender = gender || 'm';
-
-  var targetLucThan;
-  if (linhVuc === 'hon') {
-    targetLucThan = DUNG_THAN_MAP[gender === 'f' ? 'hon_f' : 'hon_m'];
-  } else if (linhVuc === 'suc') {
-    targetLucThan = DUNG_THAN_MAP['suc_cure'];
-  } else {
-    targetLucThan = DUNG_THAN_MAP[linhVuc] || 'Thê Tài';
-  }
-
-  var dungThan = haoDetails.find(function(h) { return h.lucThan === targetLucThan; });
-
-  if (!dungThan && linhVuc === 'suc') {
-    return haoDetails.find(function(h) { return h.lucThan === DUNG_THAN_MAP['suc_cause']; }) || null;
-  }
-
-  return dungThan || null;
-}
-
-/* ── Địa Chi cycle for days ── */
-const DIA_CHI_CYCLE = ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
-
-/**
- * Calculate Địa Chi of a given date using epoch method
- * Epoch: 2000-01-01 was Thìn day (index 4)
- * @param {Date} date - The date to calculate
- * @returns {number} Địa Chi index (0-11)
- */
-function getDayDiaChi(date) {
-  var epoch = new Date(2000, 0, 1);
-  var diffDays = Math.floor((date - epoch) / (1000 * 60 * 60 * 24));
-  var epochDayChi = 4; // Thìn
-  return ((epochDayChi + diffDays) % 12 + 12) % 12;
-}
-
-/**
- * Determine Nhật Thần (day spirit) for hexagram casting
- * @param {Date} ngayGieo - Casting date
- * @returns {Object} { chiIdx, chiName, clashes, supports }
- */
-function getNhatThan(ngayGieo) {
-  if (!(ngayGieo instanceof Date)) ngayGieo = new Date();
-
-  var chiIdx = getDayDiaChi(ngayGieo);
-  var chiName = DIA_CHI_CYCLE[chiIdx];
-
-  // Clashing branch (xung): index + 6 mod 12
-  var clashIdx = (chiIdx + 6) % 12;
-
-  // Supporting branch (hợp): Lục Hợp pairs
-  var lucHopPairs = [[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]];
-  var supportIdx = -1;
-  for (var i = 0; i < lucHopPairs.length; i++) {
-    var pair = lucHopPairs[i];
-    if (pair[0] === chiIdx) { supportIdx = pair[1]; break; }
-    if (pair[1] === chiIdx) { supportIdx = pair[0]; break; }
-  }
-
-  return {
-    chiIdx: chiIdx,
-    chiName: chiName,
-    clashes: DIA_CHI_CYCLE[clashIdx],
-    clashIdx: clashIdx,
-    supports: supportIdx >= 0 ? DIA_CHI_CYCLE[supportIdx] : null,
-    supportIdx: supportIdx
-  };
-}
-
 /* ── Lục Thú (Six Beasts) cycle ── */
 const LUC_THU = [
   { vi: 'Thanh Long', en: 'Azure Dragon', element: 'Mộc', nature: 'cát' },
@@ -1124,40 +923,55 @@ const LUC_THU = [
 /* Starting Lục Thú index by Thiên Can */
 const LUC_THU_START = [0, 0, 1, 1, 2, 3, 4, 4, 5, 5]; // Giáp=0, Ất=0, Bính=1, ...
 
-/**
- * Calculate Thiên Can of a given date
- * Epoch: 2000-01-01 was Canh (index 6)
- * @param {Date} date
- * @returns {number} Thiên Can index (0-9)
- */
-function getDayThienCan(date) {
-  var epoch = new Date(2000, 0, 1);
-  var diffDays = Math.floor((date - epoch) / (1000 * 60 * 60 * 24));
-  var epochDayCan = 6; // Canh
-  return ((epochDayCan + diffDays) % 10 + 10) % 10;
-}
+// ── Domain-specific Dụng Thần interpretations ──
 
-/**
- * Assign Lục Thú to each hào based on casting day's Thiên Can
- * @param {Date} ngayGieo - Casting date
- * @returns {Array} Array of 6 Lục Thú objects for hào 1-6
- */
-function getLucThu(ngayGieo) {
-  if (!(ngayGieo instanceof Date)) ngayGieo = new Date();
+/* ── Dụng Thần state interpretations by domain ── */
+const DUNG_THAN_INTERPRETATIONS = {
+  'tai': {
+    dong_vuong: { vi: 'Tiền tài đang vận động mạnh, cơ hội đầu tư tốt. Hành động nhanh sẽ có lợi.', en: 'Wealth is actively moving, good investment opportunities. Quick action brings profit.' },
+    dong_suy:   { vi: 'Tiền đang ra đi, cần thận trọng chi tiêu. Không nên mạo hiểm lúc này.', en: 'Money is flowing out, be cautious with spending. Avoid risks at this time.' },
+    tinh_vuong: { vi: 'Tài chính ổn định nhưng không có đột phá. Giữ nguyên hiện trạng là tốt.', en: 'Finances are stable but no breakthrough. Maintaining status quo is good.' },
+    tinh_suy:   { vi: 'Thu nhập thấp, cần kiên nhẫn chờ đợi. Tích lũy từ từ là cách tốt nhất.', en: 'Income is low, patience required. Gradual accumulation is the best approach.' },
+  },
+  'quan': {
+    dong_vuong: { vi: 'Sự nghiệp đang lên, cơ hội thăng tiến rõ ràng. Chủ động sẽ được đánh giá cao.', en: 'Career is rising, clear promotion opportunities. Being proactive will be appreciated.' },
+    dong_suy:   { vi: 'Áp lực công việc lớn, có thể gặp thị phi. Giữ mình và không tranh giành.', en: 'Work pressure is high, possible controversies. Stay low and avoid competition.' },
+    tinh_vuong: { vi: 'Vị trí vững chắc, được tôn trọng. Duy trì quan hệ tốt với cấp trên.', en: 'Position is solid and respected. Maintain good relationships with superiors.' },
+    tinh_suy:   { vi: 'Sự nghiệp đình trệ, khó có đột phá. Thời điểm để học hỏi và chuẩn bị.', en: 'Career is stagnant, breakthrough unlikely. Time to learn and prepare.' },
+  },
+  'hon': {
+    dong_vuong: { vi: 'Tình cảm sôi nổi, dễ gặp người ưng ý. Chủ động bày tỏ sẽ thuận lợi.', en: 'Romance is vibrant, easy to meet compatible partners. Taking initiative will be favorable.' },
+    dong_suy:   { vi: 'Tình cảm bất ổn, có thể có cãi vã hoặc chia ly. Cần nhẫn nại và lắng nghe.', en: 'Relationship unstable, arguments or separation possible. Patience and listening needed.' },
+    tinh_vuong: { vi: 'Mối quan hệ bình yên, hạnh phúc ổn định. Trân trọng những gì đang có.', en: 'Relationship is peaceful, happiness stable. Cherish what you have.' },
+    tinh_suy:   { vi: 'Tình cảm nhạt nhẽo, ít giao tiếp. Cần nỗ lực để vun đắp lại.', en: 'Romance is faint, little communication. Effort needed to nurture it again.' },
+  },
+  'suc': {
+    dong_vuong: { vi: 'Sức khỏe đang hồi phục tốt, điều trị có hiệu quả. Tiếp tục duy trì.', en: 'Health is recovering well, treatment is effective. Continue the regimen.' },
+    dong_suy:   { vi: 'Bệnh tình biến động, cần theo dõi sát. Đổi phương pháp nếu không hiệu quả.', en: 'Condition is fluctuating, close monitoring needed. Change approach if ineffective.' },
+    tinh_vuong: { vi: 'Sức khỏe ổn định, không có vấn đề lớn. Duy trì lối sống lành mạnh.', en: 'Health is stable, no major issues. Maintain a healthy lifestyle.' },
+    tinh_suy:   { vi: 'Sức đề kháng yếu, dễ ốm vặt. Cần tăng cường dinh dưỡng và nghỉ ngơi.', en: 'Resistance is low, prone to minor illness. Boost nutrition and rest.' },
+  },
+};
 
-  var canIdx = getDayThienCan(ngayGieo);
-  var startIdx = LUC_THU_START[canIdx];
+// ── Hexagram Nature Classification (0-indexed) ──
+const QUE_NATURE = {
+  thuan: [0, 1, 10, 11, 14, 19, 25, 34, 35, 42, 45, 46, 48, 50, 53, 57, 58, 61],
+  suy:   [5, 6, 12, 18, 23, 28, 29, 36, 38, 39, 44, 47, 54, 55, 62],
+  bien:  [2, 3, 4, 7, 8, 9, 13, 15, 16, 17, 20, 21, 22, 24, 26, 27, 30, 31, 32, 33, 37, 40, 41, 43, 49, 51, 52, 56, 59, 60, 63],
+};
 
-  var result = [];
-  for (var i = 0; i < 6; i++) {
-    var thuIdx = (startIdx + i) % 6;
-    result.push({
-      haoPos: i + 1,
-      vi: LUC_THU[thuIdx].vi,
-      en: LUC_THU[thuIdx].en,
-      element: LUC_THU[thuIdx].element,
-      nature: LUC_THU[thuIdx].nature
-    });
-  }
-  return result;
-}
+/* General guidance by hexagram nature */
+const QUE_NATURE_GUIDANCE = {
+  thuan: {
+    vi: 'Quẻ thuận lợi — thời cơ tốt, có thể chủ động hành động. Lợi dụng vận may hiện tại để tiến bước.',
+    en: 'Favorable hexagram — good timing, can act proactively. Use current fortune to advance.',
+  },
+  suy: {
+    vi: 'Quẻ không thuận — nên chờ đợi và chuẩn bị. Kiên nhẫn tích lũy, không nên vội vàng.',
+    en: 'Unfavorable hexagram — wait and prepare. Be patient and accumulate, don\'t rush.',
+  },
+  bien: {
+    vi: 'Quẻ chuyển biến — thời điểm thay đổi, kết quả phụ thuộc vào hành động. Cân nhắc kỹ trước khi quyết định.',
+    en: 'Transitional hexagram — time of change, outcome depends on action. Consider carefully before deciding.',
+  },
+};

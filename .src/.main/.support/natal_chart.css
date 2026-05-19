@@ -516,3 +516,21 @@ footer{position:relative;z-index:1;text-align:center;padding:2rem 1rem;border-to
 .luc-thu-cell{font-size:.75rem;color:var(--text-dim);}
 .luc-thu-cat{color:var(--success);}
 .luc-thu-hung{color:var(--danger);}
+
+/* ── Phase 5 Task 2.3: Timing Lookup Panel ── */
+#timing-area{display:none;margin-top:1.5rem;}
+.timing-panel{padding:1rem;border:1px solid var(--gold-dim);border-radius:8px;background:rgba(196,154,60,.04);}
+.timing-inputs{display:flex;gap:1rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem;}
+.timing-inputs label{display:flex;align-items:center;gap:.4rem;font-size:.9rem;color:var(--text-dim);}
+.timing-inputs input[type="number"]{width:90px;padding:.35rem .5rem;border:1px solid var(--gold-dim);border-radius:4px;background:transparent;color:inherit;font-family:'EB Garamond',serif;font-size:.95rem;}
+.timing-inputs select{padding:.35rem .5rem;border:1px solid var(--gold-dim);border-radius:4px;background:transparent;color:inherit;font-family:'EB Garamond',serif;font-size:.95rem;}
+.timing-inputs select option{background:#1a1a1a;color:#e8d9a6;}
+#lookupTimingBtn{padding:.45rem 1rem;background:var(--gold);color:#1a1408;border:none;border-radius:4px;cursor:pointer;font-family:'EB Garamond',serif;font-size:.9rem;letter-spacing:.05em;font-weight:600;transition:background .2s;}
+#lookupTimingBtn:hover{background:var(--gold-light);}
+.timing-result{margin-top:.4rem;padding:.6rem .8rem;background:rgba(196,154,60,.06);border-radius:4px;font-size:.92rem;min-height:1.2rem;}
+.timing-result:empty{display:none;}
+.timing-result .period-row{display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px solid var(--gold-dim);}
+.timing-result .period-row:last-child{border-bottom:none;}
+.timing-result .period-label{color:var(--text-dim);}
+.timing-result .period-value{font-weight:600;color:var(--gold);}
+.timing-result .period-detail{display:block;font-size:.82rem;color:var(--text-dim);margin-top:.15rem;font-style:italic;}

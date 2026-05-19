@@ -2187,7 +2187,6 @@ const CARD_INTERACTIONS_MAP = {
   "75_77": { vi: "Kỵ Sĩ Tiền và Vua Tiền: người thực hiện trung thành và người lãnh đạo chiến lược — Kỵ Sĩ hiện thực hóa tầm nhìn của Vua thông qua công việc đáng tin cậy hàng ngày; đây là sự cộng tác hoàn hảo của đất: một người chỉ đạo, một người xây dựng.", en: "Knight of Pentacles and King of Pentacles: the loyal doer and the strategic leader — the Knight realizing the King's vision through daily reliable work; this is earth's perfect collaboration: one directs, one builds." },
 
   "76_77": { vi: "Nữ Hoàng Tiền và Vua Tiền: hai thẩm quyền vĩ đại của đất — sự nuôi dưỡng ân cần và thẩm quyền chiến lược kết hợp; khi cả hai cùng hiện diện, đất đạt đến hình thức đầy đủ nhất của sự thịnh vượng: không chỉ giàu có mà còn ấm áp, không chỉ ổn định mà còn sinh sôi.", en: "Queen of Pentacles and King of Pentacles: the two great authorities of earth — tender nurturing and strategic authority combined; when both are present, earth reaches its fullest form of prosperity: not only wealthy but warm, not only stable but flourishing." },
-  // ── Task 11 pending ──
 
   // ─── TIER 5: Minor × Minor, Cross-Suit (~1,176 pairs) ──────────────────────
   // ── Tier 5a-1: Wands × Cups, fire×water (Wands 22–28 × Cups 36–49, 98 pairs) ──

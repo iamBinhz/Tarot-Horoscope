@@ -335,10 +335,8 @@ const NGU_HANH_EFFECTS = {
 // THIEN_CAN is defined in natal_chart.js (lines 245–246).
 
 // Earthly Branches (Địa Chi), index 0-11
+/* Canonical Địa Chi name array — referenced across tuvi-data, kinh-dich-data, kinh-dich-engine */
 const DIA_CHI = ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
-
-// Hour branch labels (each covers 2 solar hours; index 0=Tý giờ 23-01, etc.)
-const GIO_CHI = ['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
 
 // Palace names in order starting from Mệnh (Life palace), arranged around the chart
 // The 12 palaces placed clockwise starting at the Mệnh palace branch
@@ -1858,6 +1856,46 @@ const PHI_CUNG_INTERPRETATIONS = {
   "loc_menh_tai":  { vi: "Dòng tiền đến dễ dàng, có duyên với kinh doanh buôn bán", en: "Cash flow comes easily, natural affinity for business" },
   "loc_menh_quan": { vi: "Sự nghiệp thuận lợi, dễ được cất nhắc thăng tiến", en: "Smooth career path, easily promoted" },
   "loc_tai_dien":  { vi: "Biết cách biến tiền thành tài sản, giàu có bền vững", en: "Knows how to convert money into assets, sustainable wealth" },
+
+  /* ── Mệnh-centric Lộc paths ── */
+  "loc_menh_phuMau":  { vi: "Được cha mẹ hỗ trợ tài chính và tinh thần, gia đình là nguồn phúc lộc", en: "Parents provide financial and emotional support, family is a blessing source" },
+  "loc_menh_phucDuc": { vi: "Phúc đức dày, may mắn tự nhiên đến, ít phải lo lắng", en: "Deep blessings bring natural good fortune with little worry" },
+  "loc_menh_dien":    { vi: "Có phúc nhà cửa, dễ sở hữu bất động sản giá trị", en: "Blessed with property, easy acquisition of valuable real estate" },
+  "loc_menh_noBoc":   { vi: "Được bạn bè và cộng sự hỗ trợ đắc lực, quý nhân phò trợ", en: "Strong support from friends and associates, benefactors assist" },
+  "loc_menh_thienDi": { vi: "Ra ngoài gặp may, du lịch và công tác thuận lợi", en: "Fortune abroad, travel and business trips are favorable" },
+  "loc_menh_tatAch":  { vi: "Sức khỏe được bảo vệ, ít ốm đau bệnh tật", en: "Health is protected, rarely sick" },
+  "loc_menh_tuTuc":   { vi: "Con cái mang lại phúc lộc, hậu vận tốt đẹp", en: "Children bring blessings, good fortune in later years" },
+  "loc_menh_phuThe":  { vi: "Vợ/chồng là nguồn phúc, hôn nhân hạnh phúc và đem lại tài lộc", en: "Spouse is a blessing source, marriage brings happiness and prosperity" },
+  "loc_menh_huynhDe": { vi: "Anh chị em hỗ trợ, quan hệ huynh đệ tốt đẹp và có lợi", en: "Siblings provide support, good and beneficial sibling relationships" },
+
+  /* ── Mệnh-centric Kỵ paths ── */
+  "ky_menh_phuMau":   { vi: "Áp lực từ cha mẹ hoặc phải lo cho cha mẹ, gánh nặng gia đình", en: "Pressure from parents or must care for them, family burdens" },
+  "ky_menh_phucDuc":  { vi: "Nội tâm hay bất an, lo lắng nhiều về cuộc sống", en: "Inner restlessness, much worry about life" },
+  "ky_menh_dien":     { vi: "Nhà cửa là nguồn lo, có thể gặp vấn đề bất động sản", en: "Property is a source of worry, possible real estate issues" },
+  "ky_menh_noBoc":    { vi: "Dễ bị phản bội bởi bạn bè, cẩn thận với cộng sự", en: "Prone to betrayal by friends, be careful with associates" },
+  "ky_menh_thienDi":  { vi: "Ra ngoài hay gặp trở ngại, đi xa không thuận lợi", en: "Obstacles when going out, travel is unfavorable" },
+  "ky_menh_tatAch":   { vi: "Cần chú ý sức khỏe, dễ có bệnh mãn tính", en: "Health requires attention, prone to chronic conditions" },
+  "ky_menh_tuTuc":    { vi: "Lo lắng về con cái, con có thể là nguồn phiền muộn", en: "Worry about children, children may be a source of grief" },
+  "ky_menh_phuThe":   { vi: "Hôn nhân có áp lực, vợ/chồng là nguồn căng thẳng", en: "Marriage under pressure, spouse is a source of stress" },
+  "ky_menh_huynhDe":  { vi: "Mâu thuẫn với anh chị em, cạnh tranh trong gia đình", en: "Conflicts with siblings, competition within family" },
+
+  /* ── Tài Bạch (Wealth) relationships ── */
+  "loc_tai_quan":     { vi: "Kiếm tiền từ sự nghiệp, công việc sinh ra thu nhập ổn định", en: "Earn money from career, work generates stable income" },
+  "loc_tai_phuThe":   { vi: "Vợ/chồng mang lại tài lộc, hôn nhân có lợi về kinh tế", en: "Spouse brings wealth, marriage is financially beneficial" },
+  "ky_tai_quan":      { vi: "Sự nghiệp tiêu tốn tiền bạc, đầu tư công việc nhiều hơn thu về", en: "Career consumes money, work investment exceeds returns" },
+  "ky_tai_phuThe":    { vi: "Hôn nhân tiêu hao tài chính, vợ/chồng có thể là gánh nặng kinh tế", en: "Marriage drains finances, spouse may be a financial burden" },
+
+  /* ── Quan Lộc (Career) relationships ── */
+  "loc_quan_tai":     { vi: "Sự nghiệp tạo ra tiền bạc dồi dào, kinh doanh phát đạt", en: "Career generates abundant money, business flourishes" },
+  "loc_quan_thienDi": { vi: "Sự nghiệp phát triển ở nơi xa, công tác nước ngoài thuận lợi", en: "Career develops abroad, overseas assignments favorable" },
+  "ky_quan_tai":      { vi: "Công việc áp lực tài chính, kiếm được nhiều nhưng giữ không được", en: "Work creates financial pressure, earn much but can't keep it" },
+  "ky_quan_thienDi":  { vi: "Sự nghiệp khiến phải xa nhà, công tác nhiều nơi gây mệt mỏi", en: "Career requires being away from home, constant travel causes fatigue" },
+
+  /* ── Phu Thê (Spouse) relationships ── */
+  "loc_phuThe_tai":   { vi: "Vợ/chồng giỏi kiếm tiền, gia đình có thu nhập kép thuận lợi", en: "Spouse is good at earning money, dual-income family thrives" },
+  "loc_phuThe_tuTuc": { vi: "Hôn nhân mang lại con cái tốt đẹp, gia đình hạnh phúc viên mãn", en: "Marriage brings good children, family is happily fulfilled" },
+  "ky_phuThe_tai":    { vi: "Vợ/chồng là nguồn tiêu tiền, cần cân bằng tài chính gia đình", en: "Spouse is a spending source, need to balance family finances" },
+  "ky_phuThe_tuTuc":  { vi: "Hôn nhân và con cái là nguồn lo lắng đồng thời", en: "Marriage and children are simultaneous sources of worry" },
 };
 
 /* Palace name lookup */
